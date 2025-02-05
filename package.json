@@ -1,0 +1,57 @@
+{
+	"name": "wdp301-fe",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "react-router build",
+		"dev": "react-router dev",
+		"start": "react-router-serve ./build/server/index.js",
+		"typecheck": "react-router typegen && tsc",
+		"format": "biome format --write app",
+		"check": "biome check app",
+		"fix": "biome check --write app",
+		"fix:lint": "biome lint --write app",
+		"fix:format": "biome format --write app",
+		"prepare": "husky"
+		
+	},
+	"dependencies": {
+		"@mantine/core": "^7.16.2",
+		"@mantine/form": "^7.16.2",
+		"@mantine/hooks": "^7.16.2",
+		"@mantine/notifications": "^7.16.2",
+		"@mantinex/mantine-logo": "^1.1.0",
+		"@react-router/fs-routes": "^7.1.5",
+		"@react-router/node": "^7.1.5",
+		"@react-router/serve": "^7.1.5",
+		"@tabler/icons-react": "^3.29.0",
+		"@tanstack/react-query": "^5.66.0",
+		"@tanstack/react-query-devtools": "^5.66.0",
+		"axios": "^1.7.9",
+		"isbot": "^5.1.17",
+		"mantine-form-zod-resolver": "^1.1.0",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"react-router": "^7.1.5",
+		"zod": "^3.24.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@commitlint/cli": "^19.7.1",
+		"@commitlint/config-conventional": "^19.7.1",
+		"@react-router/dev": "^7.1.5",
+		"@tailwindcss/vite": "^4.0.0",
+		"@types/node": "^20",
+		"@types/react": "^19.0.1",
+		"@types/react-dom": "^19.0.1",
+		"husky": "^9.1.7",
+		"postcss": "^8.5.1",
+		"postcss-preset-mantine": "^1.17.0",
+		"postcss-simple-vars": "^7.0.1",
+		"react-router-devtools": "^1.1.0",
+		"tailwindcss": "^4.0.0",
+		"typescript": "^5.7.2",
+		"vite": "^5.4.11",
+		"vite-tsconfig-paths": "^5.1.4"
+	}
+}
