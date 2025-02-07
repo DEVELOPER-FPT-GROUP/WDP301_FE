@@ -42,6 +42,7 @@ export default function Header() {
               variant="default"
               onClick={() => {
                 navigate(AppRoutes.PUBLIC.AUTH.LOGIN);
+                console.log("clicked");
               }}
             >
               Log in
