@@ -4,16 +4,16 @@
 	"type": "module",
 	"scripts": {
 		"build": "react-router build",
-		"dev": "react-router dev",
+		"dev": "react-router dev --port 3000",
 		"start": "react-router-serve ./build/server/index.js",
 		"typecheck": "react-router typegen && tsc",
 		"format": "biome format --write app",
 		"check": "biome check app",
 		"fix": "biome check --write app",
-		"fix:lint": "biome lint --write app",
 		"fix:format": "biome format --write app",
-		"prepare": "husky"
-		
+		"fix:lint": "biome lint --write",
+		"prepare": "husky",
+		"test": "echo \"No tests available\""
 	},
 	"dependencies": {
 		"@mantine/core": "^7.16.2",
@@ -27,6 +27,7 @@
 		"@tabler/icons-react": "^3.29.0",
 		"@tanstack/react-query": "^5.66.0",
 		"@tanstack/react-query-devtools": "^5.66.0",
+		"@xyflow/react": "^12.4.2",
 		"axios": "^1.7.9",
 		"isbot": "^5.1.17",
 		"mantine-form-zod-resolver": "^1.1.0",
@@ -52,6 +53,13 @@
 		"tailwindcss": "^4.0.0",
 		"typescript": "^5.7.2",
 		"vite": "^5.4.11",
-		"vite-tsconfig-paths": "^5.1.4"
+		"vite-tsconfig-paths": "^5.1.4",
+		"lint-staged": "^12.0.0"
+	},
+	"lint-staged": {
+		"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
+			"biome check --files-ignore-unknown=true",
+			"biome check --write --no-errors-on-unmatched"
+		]
 	}
 }
