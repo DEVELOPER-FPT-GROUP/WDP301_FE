@@ -5,6 +5,7 @@ import Feedback from "./Feedback";
 import New from "./New";
 import Contact from "./Contact";
 import { Container } from "@mantine/core";
+import Price from "./Price";
 
 export const meta = () => {
   return [{ title: "Gia Phả Thông Minh" }];
@@ -16,6 +17,7 @@ function Home() {
       <Header />
       <HomePage />
       <Feature />
+      <Price />
       <Feedback />
       <New />
       <Contact />

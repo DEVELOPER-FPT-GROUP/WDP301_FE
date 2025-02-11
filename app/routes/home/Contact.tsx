@@ -24,7 +24,7 @@ const Contact = () => {
           fw={900}
           c="brown"
           ta="center"
-          mb="md"
+          mb="xl"
           style={{
             fontFamily: "'Pacifico', cursive",
             letterSpacing: "1px",
@@ -121,13 +121,42 @@ const Contact = () => {
               }}
               onClick={() =>
                 window.open(
-                  "mailto:support@gia-pha.com?subject=Góp ý về Gia Phả",
+                  "mailto:gconnect.fpt@gmail.com?subject=Góp ý về Gia Phả",
                   "_blank"
                 )
               }
             >
               GÓP Ý
             </Button>
+          </motion.div>
+          {/* Hiệu ứng cho Email */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            viewport={{ once: false }}
+          >
+            <Text size="md" className="contact-item" mt="xl">
+              📧 Email:{" "}
+              <a href="mailto:gconnect.fpt@gmail.com" className="contact-link">
+                gconnect.fpt@gmail.com
+              </a>
+            </Text>
+          </motion.div>
+
+          {/* Hiệu ứng cho SĐT */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            viewport={{ once: false }}
+          >
+            <Text size="md" className="contact-item" mt="xs">
+              📞 SĐT:{" "}
+              <a href="tel:0916618585" className="contact-link">
+                091 661 85 85
+              </a>
+            </Text>
           </motion.div>
         </Grid.Col>
       </Grid>

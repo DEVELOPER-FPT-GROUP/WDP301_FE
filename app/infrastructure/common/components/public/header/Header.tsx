@@ -17,6 +17,7 @@ import "./Header.css";
 const menuItems = [
   { label: "Trang chủ", id: "home" },
   { label: "Tính năng", id: "feature" },
+  { label: "Bảng giá", id: "price" },
   { label: "Phản hồi", id: "feedback" },
   { label: "Tin tức", id: "new" },
   { label: "Liên hệ", id: "contact" },
@@ -48,7 +49,7 @@ export default function Header() {
                 smooth={true}
                 duration={1000}
                 spy={true}
-                className="cursor-pointer hover:text-orange-400 fw-bold"
+                className="relative text-gray-800 font-semibold uppercase tracking-wide transition-all duration-300 ease-in-out hover:text-orange-500 hover:underline underline-offset-4"
                 // activeClass="text-blue-400 font-bold"
                 onClick={closeDrawer}
               >
