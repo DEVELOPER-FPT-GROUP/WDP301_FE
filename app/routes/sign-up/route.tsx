@@ -106,7 +106,9 @@ const SignUp = () => {
                 <div className="text-center text-sm mt-4">
                   Đã có tài khoản?
                   <a
-                    href={AppRoutes.PUBLIC.AUTH.LOGIN}
+                    onClick={() => {
+                      navigate(AppRoutes.PUBLIC.AUTH.LOGIN);
+                    }}
                     className="text-blue-500 hover:underline ml-1"
                   >
                     Đăng nhập ngay

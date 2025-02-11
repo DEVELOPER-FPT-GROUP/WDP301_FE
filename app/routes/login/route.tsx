@@ -99,7 +99,9 @@ const Login = () => {
                 />
                 <div className="text-right">
                   <a
-                    href={AppRoutes.PUBLIC.AUTH.SIGN_UP}
+                    onClick={() => {
+                      navigate(AppRoutes.PUBLIC.AUTH.SIGN_UP);
+                    }}
                     className="text-blue-500 hover:underline text-sm"
                   >
                     Quên mật khẩu?
@@ -111,7 +113,9 @@ const Login = () => {
                 <div className="text-center text-sm mt-4">
                   Chưa có tài khoản?
                   <a
-                    href={AppRoutes.PUBLIC.AUTH.SIGN_UP}
+                    onClick={() => {
+                      navigate(AppRoutes.PUBLIC.AUTH.SIGN_UP);
+                    }}
                     className="text-blue-500 hover:underline ml-1"
                   >
                     Đăng ký ngay
