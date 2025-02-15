@@ -144,6 +144,10 @@ const defaultEdges = [
     }),
 ];
 
+export const meta = () => {
+  return [{ title: "Cây gia phả" }];
+};
+
 const FamilyTree = () => {
   return (
     <Box style={{ width: "100%", height: "100%" }}>

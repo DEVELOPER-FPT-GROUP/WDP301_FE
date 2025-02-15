@@ -13,5 +13,7 @@ export class AppRoutes {
 		static readonly FAMILY_TREE = "/family-tree";
 		static readonly ACCOUNT = "/account";
 		static readonly Profile = "/profile";
+		static readonly FAMILY_EVENT = "/event";
+		static readonly FAMILY_HISTORY = "/history";
 	};
 }

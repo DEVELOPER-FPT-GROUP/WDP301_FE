@@ -52,7 +52,7 @@ const Login = () => {
 
     // Khi code thì comment đoạn dưới này lại vì đây là code giả lập login
     localStorage.setItem(Constants.API_ACCESS_TOKEN_KEY, "123");
-    window.location.href = "/family-tree";
+    navigate("/family-tree");
   };
   return (
     <Container
