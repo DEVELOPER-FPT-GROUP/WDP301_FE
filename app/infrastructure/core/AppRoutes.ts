@@ -15,5 +15,6 @@ export class AppRoutes {
 		static readonly Profile = "/profile";
 		static readonly FAMILY_EVENT = "/event";
 		static readonly FAMILY_HISTORY = "/history";
+		static readonly FAMILY_DEATH_ANNIVESARY = "/death";
 	};
 }
