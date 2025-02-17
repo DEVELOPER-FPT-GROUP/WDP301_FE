@@ -1,4 +1,4 @@
-import React, { memo, useState } from "react";
+import React, { memo } from "react";
 import {
   ReactFlow,
   Background,
@@ -7,10 +7,10 @@ import {
   useNodesState,
   useEdgesState,
   Handle,
-  type EdgeProps,
+  Position,
   type NodeTypes,
   type NodeProps,
-  Position,
+  type EdgeProps,
 } from "@xyflow/react";
 import type { FamilyMemberNodeType } from "./types";
 import { Menu, MenuItem } from "@mantine/core";
@@ -25,9 +25,8 @@ import { initialEdges } from "./edges";
 import { initialNodes } from "./nodes";
 import { Box } from "@mantine/core";
 
-// Sửa lại kiểu dữ liệu để sử dụng NodeProps từ React Flow
 const FamilyMemberNode: React.FC<NodeProps<FamilyMemberNodeType>> = memo(
-  ({ data }) => {
+  ({ id, data }) => {
     const imageUrl =
       data.gender === "male"
         ? "/app/assets/image/male.png"
@@ -60,6 +59,12 @@ const FamilyMemberNode: React.FC<NodeProps<FamilyMemberNodeType>> = memo(
       console.log("Move", data);
     };
 
+    // Điều kiện xử lý kết nối giữa vợ chồng và cha mẹ con cái
+    const isMarried =
+      (data.husbandId !== null && data.husbandId !== undefined) ||
+      (data.wifeId !== null && data.wifeId !== undefined);
+    const isParentChild = data.parentId !== null;
+
     return (
       <div
         className={`p-4 min-w-[200px] bg-white border-2 rounded-lg shadow-lg transition-all duration-300 ${
@@ -68,43 +73,80 @@ const FamilyMemberNode: React.FC<NodeProps<FamilyMemberNodeType>> = memo(
             : "border-pink-500 hover:border-pink-700"
         } hover:shadow-2xl relative`}
       >
-        {(data.husbandId !== null || data.wifeId !== null) &&
-          data.parentId !== null && (
-            <>
-              <Handle
-                type="source"
-                position={Position.Right}
-                id={`source-right-${data.id}`}
-              />
+        {data.generation === 1 ? (
+          <>
+            {data.wifeId && (
+              <>
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={`source-right-${id}`}
+                />
+                <Handle
+                  type="source"
+                  position={Position.Bottom}
+                  id={`source-bottom-${id}`}
+                />
+              </>
+            )}
+            {data.husbandId && (
               <Handle
                 type="target"
                 position={Position.Left}
-                id={`target-left-${data.id}`}
+                id={`target-left-${id}`}
               />
-            </>
-          )}
+            )}
+          </>
+        ) : (
+          <>
+            {isMarried && isParentChild && (
+              <>
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={`source-right-${id}`}
+                />
+                <Handle
+                  type="source"
+                  position={Position.Bottom}
+                  id={`source-bottom-${id}`}
+                />
+                <Handle
+                  type="target"
+                  position={Position.Top}
+                  id={`target-top-${id}`}
+                />
+              </>
+            )}
+            {isMarried && !isParentChild && (
+              <Handle
+                type="target"
+                position={Position.Left}
+                id={`target-right-${id}`}
+              />
+            )}
+            {!isMarried && (
+              <>
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={`source-right-${id}`}
+                />
+                <Handle
+                  type="source"
+                  position={Position.Bottom}
+                  id={`source-bottom-${id}`}
+                />
+                <Handle
+                  type="target"
+                  position={Position.Top}
+                  id={`target-top-${id}`}
+                />
+              </>
+            )}
+          </>
+        )}
 
-        <Handle
-          type="source"
-          position={Position.Right}
-          id={`source-left-${data.id}`}
-        />
-        <Handle
-          type="target"
-          position={Position.Left}
-          id={`target-right-${data.id}`}
-        />
-
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id={`source-parent-${data.id}`}
-        />
-        <Handle
-          type="target"
-          position={Position.Top}
-          id={`target-child-${data.id}`}
-        />
         {/* Mantine Menu Dropdown */}
         <div className="absolute top-2 right-2">
           <Menu withArrow width={100}>
@@ -160,39 +202,30 @@ const FamilyMemberNode: React.FC<NodeProps<FamilyMemberNodeType>> = memo(
     );
   }
 );
-
 interface FamilyEdgeProps extends EdgeProps {
   sourceX: number;
   sourceY: number;
   targetX: number;
   targetY: number;
-  data?: {
-    relation: string;
-  };
+  handleSource?: string;
+  handleTarget?: string;
 }
 
 const FamilyEdge: React.FC<FamilyEdgeProps> = memo(
-  ({ sourceX, sourceY, targetX, targetY, data }) => {
+  ({ sourceX, sourceY, targetX, targetY, handleSource, handleTarget }) => {
+    console.log("handleSource:", handleSource); // Kiểm tra handleSource
+    console.log("handleTarget:", handleTarget); // Kiểm tra handleTarget
+
     const edgePath = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+    console.log("edgePath:", edgePath); // Kiểm tra đường path đã tính toán
 
     return (
       <>
         <path d={edgePath} className="stroke-[2] stroke-gray-300" fill="none" />
-        {data?.relation && (
-          <text
-            x={(sourceX + targetX) / 2}
-            y={(sourceY + targetY) / 2 - 10}
-            className="text-xs fill-gray-500"
-            textAnchor="middle"
-          >
-            {data.relation}
-          </text>
-        )}
       </>
     );
   }
 );
-
 const nodeTypes: NodeTypes = {
   familyMember: FamilyMemberNode,
 };
@@ -200,7 +233,6 @@ const nodeTypes: NodeTypes = {
 const edgeTypes = {
   family: FamilyEdge,
 };
-
 const FamilyTree: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);

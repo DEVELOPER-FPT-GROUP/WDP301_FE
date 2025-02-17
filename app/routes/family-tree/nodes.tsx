@@ -3,55 +3,6 @@ import type { FamilyMemberData } from "./types";
 
 // Hàm tính toán vị trí cho các thế hệ
 
-// function generateEdges(nodes: Node<FamilyMemberData>[]) {
-//   const edges: {
-//     id: string;
-//     source: string;
-//     target: string;
-//     type: string;
-//     handleSource?: string;
-//     handleTarget?: string;
-//   }[] = [];
-
-//   // Duyệt qua tất cả các nodes để tạo các edge
-//   nodes.forEach((node) => {
-//     if (node.data.generation > 0) {
-//       const fatherId = node.data.parentId?.fatherId;
-//       if (fatherId) {
-//         edges.push({
-//           id: `e${fatherId}-${node.id}`,
-//           source: fatherId,
-//           target: node.id,
-//           type: "smoothstep",
-//           handleSource: `source-parent-${fatherId}-${node.id}`,
-//           handleTarget: `source-child-${node.id}`,
-//         });
-//       }
-//     }
-
-//     if (
-//       (node.data.husbandId !== null || node.data.wifeId !== null) &&
-//       node.parentId !== null
-//     ) {
-//       const nodeId =
-//         (node.data.husbandId as string) || (node.data.wifeId as string);
-//       edges.push({
-//         id: `e${node.id}`,
-//         source: node.id,
-//         target: nodeId,
-//         type: "smoothstep",
-//         //nghĩa là handleSource là chỉ id của một handle đến từ node khác
-//         handleSource: `source-left-${nodeId}`, // Thêm handleSource
-//         handleTarget: `source-right-${node.id}`, // Thêm handleTarget
-//       });
-//     }
-//   });
-
-//   return edges;
-// }
-
-// Sử dụng hàm tạo các edges tự động
-
 function calculatePositions(nodes: Node<FamilyMemberData>[]) {
   const generationLevels: { [key: number]: Node<FamilyMemberData>[] } = {};
 
@@ -67,71 +18,70 @@ function calculatePositions(nodes: Node<FamilyMemberData>[]) {
   let previousGenerationY = 100;
   const offsetX = 250;
 
-  // Duyệt qua từng thế hệ
-  Object.keys(generationLevels).forEach((generationKey, genIndex) => {
-    let nodesInGeneration = generationLevels[Number(generationKey)];
+  // Xử lý thế hệ đầu tiên (chỉ có 2 node: vợ - chồng)
+  const firstGenNodes = generationLevels[1];
+  if (firstGenNodes && firstGenNodes.length === 2) {
+    const wifeNode = firstGenNodes.find((node) => node.data.wifeId);
+    const husbandNode = firstGenNodes.find((node) => node.data.husbandId);
 
-    // Nếu không phải thế hệ đầu tiên, sắp xếp lại các node
-
-    if (genIndex > 0) {
-      const sortedNodes = []; // Mảng chứa các node đã sắp xếp
-
-      while (nodesInGeneration.length > 0) {
-        // Lấy phần tử đầu tiên trong nodesInGeneration
-        const currentNode = nodesInGeneration[0];
-
-        // Tìm vợ/chồng của currentNode
-        const spouseNode = nodesInGeneration.find((node) => {
-          return (
-            node.id === currentNode.data.husbandId ||
-            node.id === currentNode.data.wifeId
-          );
-        });
-
-        // So sánh để quyết định thứ tự push vào sortedNodes
-        if (spouseNode) {
-          if (currentNode.data.parentId && !spouseNode.data.parentId) {
-            sortedNodes.push(currentNode, spouseNode);
-          } else if (!currentNode.data.parentId && spouseNode.data.parentId) {
-            sortedNodes.push(spouseNode, currentNode);
-          } else {
-            // Nếu cả hai đều có/không có parentId, giữ nguyên thứ tự
-            sortedNodes.push(currentNode, spouseNode);
-          }
-
-          // Xóa cả currentNode và spouseNode khỏi nodesInGeneration
-          nodesInGeneration = nodesInGeneration.filter(
-            (node) => node.id !== currentNode.id && node.id !== spouseNode.id
-          );
-        } else {
-          // Nếu currentNode không có vợ/chồng, push vào sortedNodes và xóa khỏi nodesInGeneration
-          sortedNodes.push(currentNode);
-          nodesInGeneration = nodesInGeneration.filter(
-            (node) => node.id !== currentNode.id
-          );
-        }
-      }
-
-      // Gán lại nodesInGeneration bằng sortedNodes sau khi sắp xếp xong
-      nodesInGeneration = sortedNodes;
+    if (wifeNode && husbandNode) {
+      positions[wifeNode.id] = { x: 500, y: previousGenerationY };
+      positions[husbandNode.id] = { x: 750, y: previousGenerationY };
     }
+  }
 
-    // Tính toán vị trí cho các node trong thế hệ này
-    const totalWidth = nodesInGeneration.length * offsetX;
-    const startX = 600 - totalWidth / 2;
+  previousGenerationY += 300;
 
-    nodesInGeneration.forEach((node, index) => {
-      positions[node.id] = {
-        x: startX + index * offsetX,
-        y: previousGenerationY,
-      };
+  // Xử lý các thế hệ tiếp theo
+  Object.keys(generationLevels)
+    .map(Number)
+    .sort((a, b) => a - b) // Sắp xếp theo thứ tự thế hệ
+    .forEach((generationKey) => {
+      if (generationKey === 1) return; // Đã xử lý thế hệ đầu tiên
+
+      const prevGenerationNodes = generationLevels[generationKey - 1];
+      const nodesInGeneration = generationLevels[generationKey] || [];
+      const sortedNodes: Node<FamilyMemberData>[] = [];
+
+      // Duyệt theo thứ tự cha/mẹ đã được xếp trước đó trong `positions`
+      const sortedParents = prevGenerationNodes.sort((a, b) => {
+        return (positions[a.id]?.x || 0) - (positions[b.id]?.x || 0);
+      });
+
+      sortedParents.forEach((parentNode) => {
+        if (!parentNode.data.childId) return;
+        parentNode.data.childId.forEach((childId) => {
+          const childNode = nodesInGeneration.find((n) => n.id === childId);
+          if (childNode && !sortedNodes.includes(childNode)) {
+            sortedNodes.push(childNode);
+
+            // Tìm vợ/chồng của childNode
+            const spouseNode = nodesInGeneration.find(
+              (n) =>
+                n.id === childNode.data.husbandId ||
+                n.id === childNode.data.wifeId
+            );
+            if (spouseNode && !sortedNodes.includes(spouseNode)) {
+              sortedNodes.push(spouseNode);
+            }
+          }
+        });
+      });
+
+      // Tính toán vị trí cho thế hệ này
+      const totalWidth = sortedNodes.length * offsetX;
+      const startX = 600 - totalWidth / 2;
+
+      sortedNodes.forEach((node, index) => {
+        positions[node.id] = {
+          x: startX + index * offsetX,
+          y: previousGenerationY,
+        };
+      });
+
+      previousGenerationY += 300;
     });
 
-    // Tăng khoảng cách dọc giữa các thế hệ
-    previousGenerationY += 300;
-  });
-
-  // Trả về vị trí đã tính toán
   return positions;
 }
 
@@ -148,6 +98,7 @@ export const initialNodes: Node<FamilyMemberData>[] = [
       birthDate: "1929-05-15",
       wifeId: "2",
       parentId: null,
+      childId: ["3", "5"],
     },
     position: { x: 0, y: 0 },
   },
@@ -178,6 +129,7 @@ export const initialNodes: Node<FamilyMemberData>[] = [
       birthDate: "1954-03-10",
       wifeId: "4",
       parentId: { fatherId: "1", motherId: "2" },
+      childId: ["7", "9"],
     },
     position: { x: 0, y: 0 },
   },
@@ -236,6 +188,7 @@ export const initialNodes: Node<FamilyMemberData>[] = [
       birthDate: "1981-09-22",
       husbandId: "6",
       parentId: { fatherId: "3", motherId: "4" },
+      childId: ["13", "14", "15"],
     },
     position: { x: 0, y: 0 },
   },
@@ -263,6 +216,7 @@ export const initialNodes: Node<FamilyMemberData>[] = [
       age: 40,
       birthDate: "1984-07-18",
       husbandId: "8",
+      childId: ["12"],
       parentId: { fatherId: "3", motherId: "4" },
     },
     position: { x: 0, y: 0 },
@@ -307,6 +261,7 @@ export const initialNodes: Node<FamilyMemberData>[] = [
       age: 19,
       wifeId: "11",
       birthDate: "2005-08-30",
+      childId: ["17", "18"],
       parentId: { fatherId: "8", motherId: "9" },
     },
     position: { x: 0, y: 0 },
@@ -321,6 +276,7 @@ export const initialNodes: Node<FamilyMemberData>[] = [
       age: 17,
       birthDate: "2007-03-25",
       husbandId: "10",
+      childId: ["16", "19", "20"],
       parentId: { fatherId: "6", motherId: "7" },
     },
     position: { x: 0, y: 0 },
@@ -335,7 +291,7 @@ export const initialNodes: Node<FamilyMemberData>[] = [
       age: 16,
       birthDate: "2008-10-15",
       wifeId: null,
-      parentId: null,
+      parentId: { fatherId: "6", motherId: "7" },
     },
     position: { x: 0, y: 0 },
   },
@@ -434,5 +390,3 @@ const positions = calculatePositions(initialNodes);
 initialNodes.forEach((node) => {
   node.position = positions[node.id];
 });
-
-// export const initialEdges = generateEdges(initialNodes);

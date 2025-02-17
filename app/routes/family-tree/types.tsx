@@ -8,6 +8,7 @@ export interface BaseFamilyMemberData {
   age: number;
   birthDate?: string;
   parentId?: { fatherId: string; motherId: string } | null;
+  childId?: string[];
 
   [key: string]: unknown; // Đảm bảo có thể thêm các thuộc tính khác
 }
