@@ -16,7 +16,7 @@ class AxiosService {
 
 	constructor() {
 		this.instance = axios.create({
-			baseURL: import.meta.env.BACKEND_URL,
+			baseURL: 'http://localhost:5000/',
 			timeout: 10000, //time wait backend response before abort
 		});
 		// Add a request interceptor below

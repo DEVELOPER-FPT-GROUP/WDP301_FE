@@ -1,4 +1,4 @@
-import React, { memo, useState } from "react";
+import React, { memo, useEffect, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -10,214 +10,91 @@ import {
   Position,
   type NodeTypes,
   type NodeProps,
+  type Edge,
 } from "@xyflow/react";
-import type { FamilyMemberNodeType } from "./react-flow/types";
-import {
-  Menu,
-  MenuItem,
-  Modal,
-  Button,
-  TextInput,
-  Checkbox,
-} from "@mantine/core";
-// import { DateInput } from "@mantine/dates";
-import {
-  IconEditCircle,
-  IconTrashFilled,
-  IconHandMove,
-  IconDotsVertical,
-} from "@tabler/icons-react";
-import { IconCirclePlus } from "@tabler/icons-react";
-import { initialEdges } from "./react-flow/edges";
-import { initialNode } from "./react-flow/nodes";
+import type {
+  BaseFamilyMemberData,
+  FamilyMemberNodeType,
+} from "./react-flow-base/types";
+import { createEdges } from "./react-flow-base/edges";
+import { initialNode } from "./react-flow-base/nodes";
 import { Box } from "@mantine/core";
 import "./styles.css";
-const FamilyMemberNode: React.FC<NodeProps<FamilyMemberNodeType>> = memo(
-  ({ data }) => {
-    const imageUrl =
-      data.gender === "male"
-        ? "/app/assets/image/male.png"
-        : "/app/assets/image/female.png";
-
-    const getGenerationLabel = (generation: number): string => {
-      switch (generation) {
-        case 1:
-          return "Thế hệ thứ nhất";
-        case 2:
-          return "Thế hệ thứ hai";
-        case 3:
-          return "Thế hệ thứ ba";
-        case 4:
-          return "Thế hệ thứ tư";
-        default:
-          return `Thế hệ thứ ${generation}`;
-      }
-    };
-
-    const handleEdit = () => {
-      console.log("Edit", data);
-    };
-
-    const handleDelete = () => {
-      console.log("Delete", data);
-    };
-
-    const handleMove = () => {
-      console.log("Move", data);
-    };
-
-    // Điều kiện xử lý kết nối giữa vợ chồng và cha mẹ con cái
-    const isMarried =
-      (data.husbandId !== null && data.husbandId !== undefined) ||
-      (data.wifeId !== null && data.wifeId !== undefined);
-    const isParentChild = data.parentId !== null;
-
-    // State to handle pop-up visibility
-    const [openModal, setOpenModal] = useState(false);
-    const openPopup = () => {
-      setOpenModal(true);
-    };
-
-    const closePopup = () => {
-      setOpenModal(false);
-    };
-    // Track hover state
-
-    return (
-      <div
-        className={`p-4 min-w-[200px] bg-white border-2 rounded-lg shadow-lg transition-all duration-300 ${
-          data.gender === "male"
-            ? "border-blue-500 hover:border-blue-700"
-            : "border-pink-500 hover:border-pink-700"
-        } hover:shadow-2xl relative`}
-      >
-        {data.generation === 1 ? (
-          <>
-            {data.wifeId && <Handle type="source" position={Position.Bottom} />}
-          </>
-        ) : (
-          <>
-            {isMarried && isParentChild && (
-              <>
-                <Handle type="source" position={Position.Bottom} />
-                <Handle type="target" position={Position.Top} />
-              </>
-            )}
-            {!isMarried && (
-              <>
-                <Handle
-                  type="source"
-                  position={Position.Right}
-                  style={{
-                    width: "25px",
-                    height: "25px",
-                    cursor: "pointer",
-                    backgroundColor: "white",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <IconCirclePlus
-                    size={25}
-                    onClick={openPopup}
-                    className="icon-plus-hover"
-                    color="black"
-                  />
-                </Handle>
-                <Handle
-                  type="source"
-                  position={Position.Bottom}
-                  style={{
-                    width: "25px",
-                    height: "25px",
-                    cursor: "pointer",
-                    backgroundColor: "white",
-                  }}
-                >
-                  <IconCirclePlus
-                    size={25}
-                    onClick={openPopup}
-                    className="icon-plus-hover"
-                    color="#296452"
-                  />
-                </Handle>
-                <Handle type="target" position={Position.Top} />
-              </>
-            )}
-          </>
-        )}
-
-        {/* Mantine Menu Dropdown */}
-        <div className="absolute top-2 right-2">
-          <Menu withArrow width={100}>
-            <Menu.Target>
-              <IconDotsVertical size={30} />
-            </Menu.Target>
-
-            <Menu.Dropdown>
-              <MenuItem
-                leftSection={<IconEditCircle size={16} />}
-                onClick={handleEdit}
-              >
-                Edit
-              </MenuItem>
-              <MenuItem
-                leftSection={<IconTrashFilled size={16} />}
-                onClick={handleDelete}
-              >
-                Delete
-              </MenuItem>
-              <MenuItem
-                leftSection={<IconHandMove size={16} />}
-                onClick={handleMove}
-              >
-                Move
-              </MenuItem>
-            </Menu.Dropdown>
-          </Menu>
-        </div>
-
-        <div className="flex flex-col items-center gap-2">
-          <img
-            src={imageUrl}
-            alt={data.name}
-            className="w-16 h-16 rounded-full border-2 border-gray-200"
-          />
-          <div className="text-center">
-            <h3 className="font-semibold text-lg">{data.name}</h3>
-            <div className="flex items-center gap-2 justify-center text-sm text-gray-600">
-              <span>{data.age} tuổi</span>
-            </div>
-            {data.birthDate && (
-              <p className="text-xs text-gray-500">
-                Ngày sinh: {data.birthDate}
-              </p>
-            )}
-            <p className="text-sm font-medium text-blue-600">
-              {getGenerationLabel(data.generation)}
-            </p>
-          </div>
-        </div>
-        <Modal opened={openModal} onClose={closePopup} title="Add Connection">
-          <div className="flex justify-center items-center">
-            <Button onClick={closePopup}>Close</Button>
-          </div>
-        </Modal>
-      </div>
-    );
-  }
-);
-
-const nodeTypes: NodeTypes = {
-  familyMember: FamilyMemberNode,
+import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
+import { FamilyMemberNode } from "./components/FamilyMemberNode";
+export const meta = () => {
+  return [{ title: "Cây Gia Đình" }];
 };
 
 const FamilyTree: React.FC = () => {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNode);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(
-    initialEdges.filter((edge) => edge !== undefined)
+  const [nodes, setNodes, onNodesChange] = useNodesState<FamilyMemberNodeType>(
+    []
   );
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const { data, isSuccess, refetch } = useGetApi({
+    queryKey: ["family-tree"],
+    endpoint: "members/get-members-in-family/:id",
+    urlParams: { id: "67b09900dc5227c02b91d823" },
+  });
+  const nodeTypes: NodeTypes = {
+    familyMember: (props) => <FamilyMemberNode {...props} refetch={refetch} />,
+  };
+  useEffect(() => {
+    if (isSuccess) {
+      console.log("data: ", data.data);
+
+      const dataFormat = data.data.map((node: BaseFamilyMemberData) => {
+        const formattedNode = {
+          id: node.memberId,
+          type: "familyMember",
+          data: {
+            memberId: node.memberId,
+            familyId: node.familyId,
+            firstName: node.firstName,
+            middleName: node.middleName,
+            lastName: node.lastName,
+            dateOfBirth: node.dateOfBirth,
+            dateOfDeath: node.dateOfDeath,
+            placeOfBirth: node.placeOfBirth,
+            placeOfDeath: node.placeOfDeath,
+            isAlive: node.isAlive,
+            generation: node.generation,
+            shortSummary: node.shortSummary,
+            gender: node.gender,
+            spouse: {} as { wifeId?: string; husbandId?: string },
+            parent: node.parent
+              ? {
+                  fatherId: node.parent.fatherId,
+                  motherId: node.parent.motherId,
+                }
+              : null,
+            children: node.children,
+          },
+          position: { x: 0, y: 0 }, // Gán giá trị mặc định cho position
+        };
+        // Chỉ thêm wifeId và husbandId nếu chúng tồn tại
+        if (node.spouse?.wifeId) {
+          formattedNode.data.spouse.wifeId = node.spouse.wifeId;
+        }
+        if (node.spouse?.husbandId) {
+          formattedNode.data.spouse.husbandId = node.spouse.husbandId;
+        }
+
+        return formattedNode;
+      });
+
+      // Gọi các hàm helper để xử lý nodes và edges
+      const formattedNodes = initialNode(dataFormat);
+
+      const formattedEdges = createEdges(dataFormat).filter(
+        (edge) => edge !== undefined
+      );
+
+      // Cập nhật state khi dữ liệu thay đổi
+      setNodes(formattedNodes);
+      setEdges(formattedEdges);
+    }
+  }, [data, isSuccess, setNodes, setEdges]);
 
   return (
     <Box style={{ width: "100%", height: "100%" }}>
