@@ -1,11 +1,17 @@
 import {
   AppShell,
+  Badge,
   Box,
   Button,
   Card,
+  Divider,
+  FileInput,
   Group,
   Image,
   Modal,
+  MultiSelect,
+  Select,
+  SimpleGrid,
   Stack,
   Text,
   Textarea,
@@ -16,18 +22,23 @@ import { useEffect, useState } from "react";
 import { SolarDate, LunarDate } from "@nghiavuive/lunar_date_vi";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin from "@fullcalendar/interaction";
+import interactionPlugin, {
+  type DateClickArg,
+} from "@fullcalendar/interaction";
 import viLocale from "@fullcalendar/core/locales/vi";
+import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
+import {
+  convertRecurrence,
+  convertStatus,
+} from "~/infrastructure/utils/constant";
+import { DateTimePicker } from "@mantine/dates";
 
 export const meta = () => [{ title: "Sự kiện" }];
 
 export default function EventPage() {
-  const [value, setValue] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [opened, setOpened] = useState(false);
   const [eventTitle, setEventTitle] = useState("");
   const [eventDescription, setEventDescription] = useState("");
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [lunarInfo, setLunarInfo] = useState({
     hour: "",
     day: "",
@@ -40,35 +51,29 @@ export default function EventPage() {
   });
   const [showCalendar, setShowCalendar] = useState(true);
   const [selectedEvents, setSelectedEvents] = useState([]);
+  const { data } = useGetApi({
+    queryKey: ["events"],
+    endpoint: "events",
+  });
+  const [dateTitle, setDateTitle] = useState("hôm nay");
 
-  const handleDateClick = (info) => {
-    const eventsOnDate = mockEvents.filter(
-      (event) => event.start === info.dateStr
+  const handleDateClick = (info: DateClickArg) => {
+    const now = new Date();
+    const nowString = now.toISOString().split("T")[0]; // Chuyển now thành chuỗi yyyy-mm-dd
+    console.log(nowString);
+    console.log(info.dateStr);
+    if (nowString === info.dateStr) {
+      setDateTitle("hôm nay");
+    } else {
+      setDateTitle(info.dateStr);
+    }
+    const eventsOnDate = data.filter(
+      (event: any) => event.gregorian_event_date === info.dateStr
     );
     setSelectedEvents(eventsOnDate);
   };
-  const mockEvents = [
-    {
-      title: "Họp nhóm dự án",
-      start: "2025-02-10",
-      description: "Thảo luận kế hoạch sprint.",
-      color: "#FBBF24",
-    },
-    {
-      title: "Tham gia hội thảo công nghệ",
-      start: "2025-02-14",
-      description: "Hội thảo AI và Machine Learning.",
-      color: "#E76F51",
-    },
-    {
-      title: "Ăn tối gia đình",
-      start: "2025-02-14",
-      description: "Ăn tối và tâm sự cùng gia đình.",
-      color: "#4CAF50",
-    },
-  ];
 
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null) as any;
   const [modalOpened, setModalOpened] = useState(false);
 
   useEffect(() => {
@@ -111,10 +116,6 @@ export default function EventPage() {
 
         const stemIndex = (dayStemIndex * 2 + hourIndex) % 10;
 
-        console.log(
-          `Giờ: ${hours}, Địa Chi Giờ: ${earthlyBranches[hourIndex]}, Thiên Can Giờ: ${heavenlyStems[stemIndex]}`
-        );
-
         return `${heavenlyStems[stemIndex]} ${earthlyBranches[hourIndex]}`;
       };
 
@@ -148,7 +149,40 @@ export default function EventPage() {
     const lunarDate = solarDate.toLunarDate();
     return `${lunarDate.get().day}/${lunarDate.get().month}`;
   };
+  const [eventData, setEventData] = useState({
+    event_name: "",
+    event_description: "",
+    event_scope: "",
+    event_type: "",
+    date: null,
+    time: "",
+    participants: [],
+    images: [],
+  });
 
+  const eventsType = [
+    { label: "Sinh nhật", value: "BIRTHDAY" },
+    { label: "Đám ma", value: "DEATH" },
+    { label: "Kết hôn", value: "MARRIAGE" },
+    { label: "Tiệc", value: "PARTY" },
+    { label: "Họp", value: "MEETING" },
+    { label: "Kỷ niệm", value: "ANNIVERSARY" },
+    { label: "Khác", value: "OTHER" },
+  ];
+
+  const eventsScope = [
+    { label: "Họ", value: "FAMILY" },
+    { label: "Chi", value: "BRANCH" },
+    { label: "Gia đình", value: "HOUSE_HOLD" },
+    { label: "Cá nhân", value: "PRIVATE" },
+  ];
+
+  const eventsConcurrence = [
+    { label: "Hàng ngày", value: "daily" },
+    { label: "Hàng tuần", value: "weekly" },
+    { label: "Hàng tháng", value: "monthly" },
+    { label: "Hàng năm", value: "yearly" },
+  ];
   return (
     <AppShell padding="lg" styles={{ main: { backgroundColor: "#f5f2dc" } }}>
       <Stack justify="md">
@@ -239,19 +273,16 @@ export default function EventPage() {
                 right: "next",
               }}
               selectable={true}
-              events={[
-                {
-                  title: "Tết Nguyên Đán",
-                  start: "2025-02-10",
-                  color: "#FBBF24",
-                },
-                {
-                  title: "Rằm tháng Giêng",
-                  start: "2025-02-14",
-                  color: "#FBBF24",
-                },
-                // Thêm các sự kiện khác nếu cần
-              ]}
+              selectMirror={true}
+              events={
+                data
+                  ? data.map((event: any) => ({
+                      title: event.event_name,
+                      start: event.gregorian_event_date,
+                      color: "#FBBF24",
+                    }))
+                  : []
+              }
               dayCellContent={(arg) => {
                 return (
                   <div>
@@ -271,11 +302,11 @@ export default function EventPage() {
         )}
         <Card padding="md" radius="md" withBorder>
           <Title order={5} mb="xs">
-            📆 Sự kiện hôm nay
+            📆 Sự kiện {dateTitle}
           </Title>
           {selectedEvents.length > 0 ? (
             <Stack justify="md">
-              {selectedEvents.map((event, index) => (
+              {selectedEvents.map((event: any, index) => (
                 <Group
                   key={index}
                   justify="apart"
@@ -293,16 +324,16 @@ export default function EventPage() {
                   }}
                 >
                   <Text c="dark" size="lg" fw={600}>
-                    {event.title}
+                    {event.event_name}
                   </Text>
                   <Text c="gray" size="sm">
-                    🕒 {event.time}
+                    🕒 20:00
                   </Text>
                 </Group>
               ))}
             </Stack>
           ) : (
-            <Text c="gray">Không có sự kiện nào diễn ra hôm nay</Text>
+            <Text c="gray">Không có sự kiện nào diễn ra {dateTitle}</Text>
           )}
         </Card>
 
@@ -310,54 +341,232 @@ export default function EventPage() {
           <Title order={5} mb="xs">
             30 ngày tới
           </Title>
-          <Text color="gray">
-            Không có sự kiện nào diễn ra trong 30 ngày tới
-          </Text>
+          {data && data.length > 0 ? (
+            <Stack justify="md">
+              {data.map((event: any, index: any) => (
+                <Group
+                  key={index}
+                  justify="apart"
+                  style={{
+                    padding: "12px 16px",
+                    backgroundColor: "#e7f3ff",
+                    borderRadius: "12px",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                    ":hover": { transform: "scale(1.02)" },
+                  }}
+                  onClick={() => {
+                    setSelectedEvent(event);
+                    setModalOpened(true);
+                  }}
+                >
+                  <Text
+                    c="dark"
+                    size="md"
+                    fw={600}
+                    style={{ fontFamily: "Poppins, sans-serif" }}
+                  >
+                    {event.event_name}
+                  </Text>
+                  <Group justify="xs" style={{ alignItems: "center" }}>
+                    <Text c="blue" size="sm" style={{ fontWeight: 500 }}>
+                      📅 {event.gregorian_event_date}
+                    </Text>
+                    <Text c="gray" size="sm">
+                      🕒 {event.time || "Chưa đặt giờ"}
+                    </Text>
+                  </Group>
+                </Group>
+              ))}
+            </Stack>
+          ) : (
+            <Text c="gray">Không có sự kiện nào diễn ra trong 30 ngày tới</Text>
+          )}
         </Card>
       </Stack>
       <Modal
         opened={opened}
+        title={<Title order={2}>Tạo sự kiện mới</Title>}
+        centered
+        size="70%"
         onClose={() => setOpened(false)}
-        title="Tạo sự kiện mới"
-        centered
       >
-        <TextInput
-          label="Tiêu đề sự kiện"
-          placeholder="Nhập tiêu đề"
-          value={eventTitle}
-          onChange={(e) => setEventTitle(e.currentTarget.value)}
-        />
-
-        <Textarea
-          label="Mô tả sự kiện"
-          placeholder="Nhập mô tả"
-          value={eventDescription}
-          onChange={(e) => setEventDescription(e.currentTarget.value)}
-          mt="md"
-        />
-
-        <Group justify="flex-end" mt="md">
-          <Button variant="default" onClick={() => setOpened(false)}>
-            Hủy
-          </Button>
-          <Button color="orange" onClick={handleCreateEvent}>
-            Tạo
-          </Button>
-        </Group>
+        <Stack justify="md">
+          <TextInput
+            label="Tên sự kiện"
+            placeholder="Nhập tên sự kiện"
+            required
+            onChange={(e) =>
+              setEventData({ ...eventData, event_name: e.currentTarget.value })
+            }
+          />
+          <Textarea
+            label="Mô tả sự kiện"
+            placeholder="Nhập mô tả"
+            onChange={(e) =>
+              setEventData({
+                ...eventData,
+                event_description: e.currentTarget.value,
+              })
+            }
+          />
+          <SimpleGrid cols={2} spacing="md">
+            <Select
+              label="Loại sự kiện"
+              data={eventsType}
+              placeholder="Chọn loại sự kiện"
+              onChange={(value) =>
+                setEventData({ ...eventData, event_type: value })
+              }
+              required
+            />
+            <Select
+              label="Phạm vi sự kiện"
+              data={eventsScope}
+              placeholder="Chọn phạm vi sự kiện"
+              required
+            />
+          </SimpleGrid>
+          <SimpleGrid cols={2} spacing="md">
+            <DateTimePicker
+              clearable
+              label="Chọn ngày và giờ bắt đầu"
+              locale="vi"
+              onChange={(value) =>
+                setEventData({ ...eventData, startDate: value })
+              }
+              required
+            />
+            <DateTimePicker
+              clearable
+              label="Chọn ngày và giờ kết thúc"
+              locale="vi"
+              onChange={(value) =>
+                setEventData({ ...eventData, endDate: value })
+              }
+              required
+            />
+          </SimpleGrid>
+          <SimpleGrid cols={2} spacing="md">
+            <TextInput
+              label="Địa chỉ tổ chức"
+              placeholder="Địa chỉ tổ chức"
+              required
+              onChange={(e) =>
+                setEventData({
+                  ...eventData,
+                  event_name: e.currentTarget.value,
+                })
+              }
+            />
+            <Select
+              label="Lặp lại"
+              data={eventsConcurrence}
+              placeholder="Lặp lại "
+            />
+          </SimpleGrid>
+          <MultiSelect
+            label="Người tham gia"
+            data={[
+              { value: "1", label: "Nguyễn Văn A" },
+              { value: "2", label: "Trần Thị B" },
+            ]}
+            placeholder="Chọn người tham gia"
+            onChange={(values) =>
+              setEventData({ ...eventData, participants: values })
+            }
+          />
+          <FileInput
+            label="Tải lên hình ảnh"
+            multiple
+            placeholder="Chọn các hình ảnh"
+          />
+          <Group justify="right" mt="md">
+            <Button variant="default" onClick={() => setOpened(false)}>
+              Hủy
+            </Button>
+            <Button color="brown">Tạo</Button>
+          </Group>
+        </Stack>
       </Modal>
-      <Modal
-        opened={modalOpened}
-        onClose={() => setModalOpened(false)}
-        title={selectedEvent?.title}
-        centered
-      >
-        <Text size="md" fw={500} mb="xs">
-          ⏰ Thời gian: {selectedEvent?.time}
-        </Text>
-        <Text size="sm" color="gray">
-          📄 Mô tả: {selectedEvent?.description}
-        </Text>
-      </Modal>
+      {selectedEvent && (
+        <Modal
+          opened={modalOpened}
+          onClose={() => setModalOpened(false)}
+          title={<Title order={2}>{selectedEvent.event_name}</Title>}
+          centered
+          size="70%"
+          padding="xl"
+        >
+          <Stack justify="lg">
+            <Group>
+              <Badge color="blue" size="lg" radius="md">
+                📖 Mô tả
+              </Badge>
+              <Text size="md">{selectedEvent.event_description}</Text>
+            </Group>
+            <Divider />
+            <Group justify="xs" align="column">
+              <Text>
+                📅 Ngày dương: <b>{selectedEvent.gregorian_event_date}</b>
+              </Text>
+              <Text>
+                🌙 Ngày âm: <b>{selectedEvent.lunar_event_date}</b>
+              </Text>
+              <Text>🕒 {selectedEvent.time || "Chưa đặt giờ"}</Text>
+              <Text>
+                📍 Địa điểm: <b>{selectedEvent.location}</b>
+              </Text>
+              <Text>
+                🔁 Lặp lại:{" "}
+                <b>{convertRecurrence(selectedEvent.recurrence_rule)}</b>
+              </Text>
+            </Group>
+            <Divider />
+            <Title order={4}>Người tham gia</Title>
+            <Stack justify="xs">
+              {selectedEvent.eventParticipants.map((p: any) => (
+                <Group key={p.participant_id} justify="sm">
+                  <Badge color="teal" size="sm" radius="xl">
+                    👤
+                  </Badge>
+                  <Text fw={700} c="dark">
+                    {p.member?.firstName} {p.member?.middleName}{" "}
+                    {p.member?.lastName}
+                  </Text>
+                  <Badge
+                    color={p.role_in_event === "Host" ? "green" : "gray"}
+                    size="sm"
+                    radius="xl"
+                  >
+                    {p.role_in_event === "Host" ? "Chủ tiệc" : "Người tham gia"}
+                  </Badge>
+                  <Badge
+                    color={convertStatus(p.rsvp_status).color}
+                    size="sm"
+                    radius="xl"
+                  >
+                    {convertStatus(p.rsvp_status).text}
+                  </Badge>
+                </Group>
+              ))}
+            </Stack>
+            <Divider />
+            <Title order={4}>Hình ảnh</Title>
+            <SimpleGrid cols={3} spacing="md">
+              {selectedEvent.media.map((m: any) => (
+                <Image
+                  key={m.media_id}
+                  src={m.url}
+                  alt={m.caption}
+                  radius="lg"
+                  style={{ width: "100%" }}
+                />
+              ))}
+            </SimpleGrid>
+          </Stack>
+        </Modal>
+      )}
     </AppShell>
   );
 }

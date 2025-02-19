@@ -14,7 +14,7 @@ export const menuKeys: MenuItem[] = [
 		path: AppRoutes.PRIVATE.FAMILY_EVENT,
 	},
 	{
-		label: "Lịch sử gia đình",
+		label: "Lịch sử dòng họ",
 		leftIcon: IconHierarchy,
 		path: AppRoutes.PRIVATE.FAMILY_HISTORY,
 	},
@@ -23,6 +23,11 @@ export const menuKeys: MenuItem[] = [
 		leftIcon: IconLabelImportant,
 		path: AppRoutes.PRIVATE.FAMILY_DEATH_ANNIVESARY,
 	},
+	// {
+	// 	label: "Test",
+	// 	leftIcon: IconLabelImportant,
+	// 	path: '/test',
+	// },
 	// {
 	// 	label: "Account",
 	// 	leftIcon: IconUser,
