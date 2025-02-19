@@ -1,0 +1,250 @@
+{
+  "users": [
+    { "id": 1, "firstName": "Nguyễn", "middleName": "Văn", "lastName": "A" },
+    { "id": 2, "firstName": "Trần", "middleName": "Thị", "lastName": "B" },
+    { "id": 3, "firstName": "Lê", "middleName": "Quốc", "lastName": "C" },
+    { "id": 4, "firstName": "Phạm", "middleName": "Minh", "lastName": "D" },
+    { "id": 5, "firstName": "Võ", "middleName": "Thanh", "lastName": "E" }
+  ],
+  "events": [
+    {
+      "event_id": 1,
+      "created_by": 1,
+      "event_scope": "FAMILY",
+      "event_type": "ANNIVERSARY",
+      "event_name": "Giỗ tổ Nguyễn Văn A",
+      "event_description": "Ngày giỗ ông tổ Nguyễn Văn A.",
+      "gregorian_event_date": "2025-02-15",
+      "lunar_event_date": "2025-02-05",
+      "recurrence_rule": "YEARLY",
+      "end_recurrence_date": null,
+      "location": "Nhà thờ họ Nguyễn",
+      "created_at": "2025-02-17T10:00:00Z",
+      "eventParticipants": [
+        {
+          "participant_id": 1,
+          "event_id": 1,
+          "member_id": 1,
+          "role_in_event": "Host",
+          "rsvp_status": "Accepted",
+          "member": {
+            "id": 1,
+            "firstName": "Nguyễn",
+            "middleName": "Văn",
+            "lastName": "A"
+          }
+        },
+        {
+          "participant_id": 2,
+          "event_id": 1,
+          "member_id": 2,
+          "role_in_event": "Guest",
+          "rsvp_status": "Pending",
+          "member": {
+            "id": 2,
+            "firstName": "Trần",
+            "middleName": "Thị",
+            "lastName": "B"
+          }
+        }
+      ],
+      "media": [
+        {
+          "media_id": 1,
+          "owner_id": 1,
+          "url": "/kkk.jpg",
+          "ownerType": "Event",
+          "fileName": "gioto.jpg",
+          "caption": "Hình ảnh Giỗ tổ Nguyễn Văn A",
+          "mimeType": "image/jpeg",
+          "size": 2048,
+          "created_at": "2025-02-17T10:30:00Z",
+          "updated_at": "2025-02-17T10:30:00Z"
+        },
+        {
+          "media_id": 2,
+          "owner_id": 2,
+          "url": "/kkk.jpg",
+          "ownerType": "Event",
+          "fileName": "sinhnhatB.jpg",
+          "caption": "Sinh nhật Bà B",
+          "mimeType": "image/jpeg",
+          "size": 1024,
+          "created_at": "2025-02-17T11:30:00Z",
+          "updated_at": "2025-02-17T11:30:00Z"
+        },
+        {
+          "media_id": 2,
+          "owner_id": 2,
+          "url": "/kkk.jpg",
+          "ownerType": "Event",
+          "fileName": "sinhnhatB.jpg",
+          "caption": "Sinh nhật Bà B",
+          "mimeType": "image/jpeg",
+          "size": 1024,
+          "created_at": "2025-02-17T11:30:00Z",
+          "updated_at": "2025-02-17T11:30:00Z"
+        },
+        {
+          "media_id": 2,
+          "owner_id": 2,
+          "url": "/kkk.jpg",
+          "ownerType": "Event",
+          "fileName": "sinhnhatB.jpg",
+          "caption": "Sinh nhật Bà B",
+          "mimeType": "image/jpeg",
+          "size": 1024,
+          "created_at": "2025-02-17T11:30:00Z",
+          "updated_at": "2025-02-17T11:30:00Z"
+        }
+      ]
+    },
+    {
+      "event_id": 2,
+      "created_by": 2,
+      "event_scope": "FAMILY",
+      "event_type": "BIRTHDAY",
+      "event_name": "Sinh nhật Bà Nguyễn Thị B",
+      "event_description": "Sinh nhật bà Nguyễn Thị B.",
+      "gregorian_event_date": "2025-02-20",
+      "lunar_event_date": "2025-05-10",
+      "recurrence_rule": "YEARLY",
+      "end_recurrence_date": null,
+      "location": "Nhà Bà B",
+      "created_at": "2025-02-17T11:00:00Z",
+      "eventParticipants": [
+        {
+          "participant_id": 1,
+          "event_id": 1,
+          "member_id": 1,
+          "role_in_event": "Host",
+          "rsvp_status": "Accepted",
+          "member": {
+            "id": 1,
+            "firstName": "Nguyễn",
+            "middleName": "Văn",
+            "lastName": "A"
+          }
+        },
+        {
+          "participant_id": 2,
+          "event_id": 1,
+          "member_id": 2,
+          "role_in_event": "Guest",
+          "rsvp_status": "Pending",
+          "member": {
+            "id": 2,
+            "firstName": "Trần",
+            "middleName": "Thị",
+            "lastName": "B"
+          }
+        }
+      ],
+      "media": [
+        {
+          "media_id": 1,
+          "owner_id": 1,
+          "url": "/kkk.jpg",
+          "ownerType": "Event",
+          "fileName": "gioto.jpg",
+          "caption": "Hình ảnh Giỗ tổ Nguyễn Văn A",
+          "mimeType": "image/jpeg",
+          "size": 2048,
+          "created_at": "2025-02-17T10:30:00Z",
+          "updated_at": "2025-02-17T10:30:00Z"
+        },
+        {
+          "media_id": 2,
+          "owner_id": 2,
+          "url": "/kkk.jpg",
+          "ownerType": "Event",
+          "fileName": "sinhnhatB.jpg",
+          "caption": "Sinh nhật Bà B",
+          "mimeType": "image/jpeg",
+          "size": 1024,
+          "created_at": "2025-02-17T11:30:00Z",
+          "updated_at": "2025-02-17T11:30:00Z"
+        }
+      ]
+    }
+  ],
+  "eventParticipants": [
+    {
+      "participant_id": 1,
+      "event_id": 1,
+      "member_id": 1,
+      "role_in_event": "Host",
+      "rsvp_status": "Accepted"
+    },
+    {
+      "participant_id": 2,
+      "event_id": 1,
+      "member_id": 2,
+      "role_in_event": "Guest",
+      "rsvp_status": "Pending"
+    },
+    {
+      "participant_id": 3,
+      "event_id": 2,
+      "member_id": 3,
+      "role_in_event": "Guest",
+      "rsvp_status": "Accepted"
+    }
+  ],
+  "media": [
+    {
+      "media_id": 1,
+      "owner_id": 1,
+      "url": "https://via.placeholder.com/600x400",
+      "ownerType": "Event",
+      "fileName": "gioto.jpg",
+      "caption": "Hình ảnh Giỗ tổ Nguyễn Văn A",
+      "mimeType": "image/jpeg",
+      "size": 2048,
+      "created_at": "2025-02-17T10:30:00Z",
+      "updated_at": "2025-02-17T10:30:00Z"
+    },
+    {
+      "media_id": 2,
+      "owner_id": 2,
+      "url": "https://via.placeholder.com/600x400",
+      "ownerType": "Event",
+      "fileName": "sinhnhatB.jpg",
+      "caption": "Sinh nhật Bà B",
+      "mimeType": "image/jpeg",
+      "size": 1024,
+      "created_at": "2025-02-17T11:30:00Z",
+      "updated_at": "2025-02-17T11:30:00Z"
+    }
+  ],
+  "familyStories": [
+    {
+      "id": 1,
+      "date": "1800s",
+      "title": "Ông tổ Nguyễn Văn A",
+      "description": "Người khai sinh ra dòng họ Nguyễn với nhiều câu chuyện lịch sử hào hùng.",
+      "image": "https://via.placeholder.com/400x200"
+    },
+    {
+      "id": 2,
+      "date": "1850s",
+      "title": "Bà Nguyễn Thị B",
+      "description": "Người đóng góp lớn trong việc bảo tồn văn hóa gia tộc.",
+      "image": "https://via.placeholder.com/400x200"
+    },
+    {
+      "id": 3,
+      "date": "1900s",
+      "title": "Nguyễn Văn C",
+      "description": "Chiến sĩ cách mạng, cống hiến vì đất nước.",
+      "image": "https://via.placeholder.com/400x200"
+    },
+    {
+      "id": 4,
+      "date": "1950s",
+      "title": "Nguyễn Thị D",
+      "description": "Người truyền lửa cho thế hệ trẻ trong gia tộc.",
+      "image": "https://via.placeholder.com/400x200"
+    }
+  ]
+}
