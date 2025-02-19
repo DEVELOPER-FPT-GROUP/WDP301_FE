@@ -10,6 +10,7 @@ import {
 import "@mantine/core/styles.css";
 import "@xyflow/react/dist/style.css";
 import "./app.css";
+
 import { createTheme, MantineProvider } from "@mantine/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
