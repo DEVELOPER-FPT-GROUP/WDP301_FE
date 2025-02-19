@@ -1,162 +1,114 @@
-import { ReactFlow, Controls, useEdges } from "@xyflow/react";
+import React, { memo, useEffect, useState } from "react";
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  useNodesState,
+  useEdgesState,
+  Handle,
+  Position,
+  type NodeTypes,
+  type NodeProps,
+  type Edge,
+} from "@xyflow/react";
+import type {
+  BaseFamilyMemberData,
+  FamilyMemberNodeType,
+} from "./react-flow-base/types";
+import { createEdges } from "./react-flow-base/edges";
+import { initialNode } from "./react-flow-base/nodes";
 import { Box } from "@mantine/core";
-import CustomNode from "./node-base-component";
-// import { IconCircle } from "@tabler/icons-react";
-const PARENT_Y = 100; // Vị trí Y của cha mẹ
-const CHILD_Y = 500; // Vị trí Y của con
-const X_GAP = 300; // Khoảng cách ngang giữa các node
-
-// Danh sách các thành viên
-const familyMembers = [
-  {
-    id: "1",
-    memberName: "Father",
-    gender: "male",
-    relationType: "spouse",
-    spouseId: "2",
-    parentId: null,
-  },
-  {
-    id: "2",
-    memberName: "Mother",
-    gender: "female",
-    relationType: "spouse",
-    spouseId: "1",
-    parentId: null,
-  },
-  {
-    id: "3",
-    memberName: "Child1",
-    gender: "male",
-    relationType: "child",
-    parentId: "1",
-  },
-  {
-    id: "4",
-    memberName: "Child2",
-    gender: "male",
-    relationType: "child",
-    parentId: "1",
-  },
-  {
-    id: "5",
-    memberName: "Child3",
-    gender: "male",
-    relationType: "child",
-    parentId: "1",
-  },
-  {
-    id: "6",
-    memberName: "Child4",
-    gender: "female",
-    relationType: "child",
-    parentId: "1",
-  },
-  {
-    id: "7",
-    memberName: "Child5",
-    gender: "male",
-    relationType: "child",
-    parentId: "1",
-  },
-];
-
-// Tạo nodes tự động
-const middleNodeId = "middle"; // ID của node trung gian
-
-const defaultNodes = [
-  ...familyMembers.map((member, index) => ({
-    id: member.id,
-    type: "customNode",
-    data: {
-      imgSrc: `/app/assets/image/${member.gender}.png`,
-      memberName: member.memberName,
-      gender: member.gender,
-      relationType: member.relationType,
-    },
-    position: {
-      x:
-        member.relationType === "spouse"
-          ? 300 + index * X_GAP
-          : 200 + (index - 2) * X_GAP, // Vợ chồng ở hàng trên
-      y: member.relationType === "spouse" ? PARENT_Y : CHILD_Y, // Cha mẹ trên, con cái dưới
-    },
-  })),
-  {
-    id: middleNodeId,
-    type: "default",
-    data: {
-      // label: <IconCircle size={20} />
-    },
-    position: { x: 500, y: 200 },
-    style: { borderRadius: 50, width: 1, height: 1 },
-  },
-];
-
-// const defaultEdges = [
-//   // Kết nối cha mẹ với node trung gian
-//   { id: "e1-middle", source: "1", target: middleNodeId, type: "step" },
-//   { id: "e2-middle", source: "2", target: middleNodeId, type: "step" },
-
-//   // Kết nối node trung gian với tất cả các con
-//   ...familyMembers
-//     .filter((member) => member.relationType === "child")
-//     .map((child) => ({
-//       id: `e${middleNodeId}-${child.id}`,
-//       source: middleNodeId,
-//       target: child.id,
-//       type: "step",
-//     })),
-// ];
-// Tạo edges tự động với logic sửa đổi
-const defaultEdges = [
-  // Kết nối cha mẹ với node trung gian
-  {
-    id: "e1-middle",
-    source: "1",
-    target: middleNodeId,
-    type: "step",
-    sourceHandle: "right",
-    targetHandle: "left",
-  },
-  {
-    id: "e2-middle",
-    source: "2",
-    target: middleNodeId,
-    type: "step",
-    sourceHandle: "left",
-    targetHandle: "right",
-  },
-
-  // Kết nối node trung gian với tất cả các con
-  ...familyMembers
-    .filter((member) => member.relationType === "child")
-    .map((child, index) => {
-      const isEven = index % 2 === 0; // Phân biệt các node để xác định vị trí handle
-      return {
-        id: `e${middleNodeId}-${child.id}`,
-        source: middleNodeId,
-        target: child.id,
-        type: "step",
-        sourceHandle: isEven ? "right" : "left", // Nếu index chẵn thì source là "right", lẻ thì "left"
-        targetHandle: isEven ? "left" : "right", // Ngược lại với source
-      };
-    }),
-];
-
+import "./styles.css";
+import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
+import { FamilyMemberNode } from "./components/FamilyMemberNode";
 export const meta = () => {
-  return [{ title: "Cây gia phả" }];
+  return [{ title: "Cây Gia Đình" }];
 };
 
-const FamilyTree = () => {
+const FamilyTree: React.FC = () => {
+  const [nodes, setNodes, onNodesChange] = useNodesState<FamilyMemberNodeType>(
+    []
+  );
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const { data, isSuccess, refetch } = useGetApi({
+    queryKey: ["family-tree"],
+    endpoint: "members/get-members-in-family/:id",
+    urlParams: { id: "67b09900dc5227c02b91d823" },
+  });
+  const nodeTypes: NodeTypes = {
+    familyMember: (props) => <FamilyMemberNode {...props} refetch={refetch} />,
+  };
+  useEffect(() => {
+    if (isSuccess) {
+      console.log("data: ", data.data);
+
+      const dataFormat = data.data.map((node: BaseFamilyMemberData) => {
+        const formattedNode = {
+          id: node.memberId,
+          type: "familyMember",
+          data: {
+            memberId: node.memberId,
+            familyId: node.familyId,
+            firstName: node.firstName,
+            middleName: node.middleName,
+            lastName: node.lastName,
+            dateOfBirth: node.dateOfBirth,
+            dateOfDeath: node.dateOfDeath,
+            placeOfBirth: node.placeOfBirth,
+            placeOfDeath: node.placeOfDeath,
+            isAlive: node.isAlive,
+            generation: node.generation,
+            shortSummary: node.shortSummary,
+            gender: node.gender,
+            spouse: {} as { wifeId?: string; husbandId?: string },
+            parent: node.parent
+              ? {
+                  fatherId: node.parent.fatherId,
+                  motherId: node.parent.motherId,
+                }
+              : null,
+            children: node.children,
+          },
+          position: { x: 0, y: 0 }, // Gán giá trị mặc định cho position
+        };
+        // Chỉ thêm wifeId và husbandId nếu chúng tồn tại
+        if (node.spouse?.wifeId) {
+          formattedNode.data.spouse.wifeId = node.spouse.wifeId;
+        }
+        if (node.spouse?.husbandId) {
+          formattedNode.data.spouse.husbandId = node.spouse.husbandId;
+        }
+
+        return formattedNode;
+      });
+
+      // Gọi các hàm helper để xử lý nodes và edges
+      const formattedNodes = initialNode(dataFormat);
+
+      const formattedEdges = createEdges(dataFormat).filter(
+        (edge) => edge !== undefined
+      );
+
+      // Cập nhật state khi dữ liệu thay đổi
+      setNodes(formattedNodes);
+      setEdges(formattedEdges);
+    }
+  }, [data, isSuccess, setNodes, setEdges]);
+
   return (
     <Box style={{ width: "100%", height: "100%" }}>
       <ReactFlow
-        defaultNodes={defaultNodes}
-        defaultEdges={defaultEdges}
-        nodeTypes={{ customNode: CustomNode }}
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        nodeTypes={nodeTypes}
+        fitView
       >
+        <Background />
         <Controls />
+        <MiniMap />
       </ReactFlow>
     </Box>
   );
