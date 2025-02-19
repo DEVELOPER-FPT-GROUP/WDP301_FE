@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -10,23 +10,30 @@ import {
   Position,
   type NodeTypes,
   type NodeProps,
-  type EdgeProps,
 } from "@xyflow/react";
-import type { FamilyMemberNodeType } from "./types";
-import { Menu, MenuItem } from "@mantine/core";
+import type { FamilyMemberNodeType } from "./react-flow/types";
+import {
+  Menu,
+  MenuItem,
+  Modal,
+  Button,
+  TextInput,
+  Checkbox,
+} from "@mantine/core";
+// import { DateInput } from "@mantine/dates";
 import {
   IconEditCircle,
   IconTrashFilled,
   IconHandMove,
   IconDotsVertical,
 } from "@tabler/icons-react";
-
-import { initialEdges } from "./edges";
-import { initialNodes } from "./nodes";
+import { IconCirclePlus } from "@tabler/icons-react";
+import { initialEdges } from "./react-flow/edges";
+import { initialNode } from "./react-flow/nodes";
 import { Box } from "@mantine/core";
-
+import "./styles.css";
 const FamilyMemberNode: React.FC<NodeProps<FamilyMemberNodeType>> = memo(
-  ({ id, data }) => {
+  ({ data }) => {
     const imageUrl =
       data.gender === "male"
         ? "/app/assets/image/male.png"
@@ -65,6 +72,17 @@ const FamilyMemberNode: React.FC<NodeProps<FamilyMemberNodeType>> = memo(
       (data.wifeId !== null && data.wifeId !== undefined);
     const isParentChild = data.parentId !== null;
 
+    // State to handle pop-up visibility
+    const [openModal, setOpenModal] = useState(false);
+    const openPopup = () => {
+      setOpenModal(true);
+    };
+
+    const closePopup = () => {
+      setOpenModal(false);
+    };
+    // Track hover state
+
     return (
       <div
         className={`p-4 min-w-[200px] bg-white border-2 rounded-lg shadow-lg transition-all duration-300 ${
@@ -87,8 +105,43 @@ const FamilyMemberNode: React.FC<NodeProps<FamilyMemberNodeType>> = memo(
             )}
             {!isMarried && (
               <>
-                <Handle type="source" position={Position.Right} />
-                <Handle type="source" position={Position.Bottom} />
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  style={{
+                    width: "25px",
+                    height: "25px",
+                    cursor: "pointer",
+                    backgroundColor: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <IconCirclePlus
+                    size={25}
+                    onClick={openPopup}
+                    className="icon-plus-hover"
+                    color="black"
+                  />
+                </Handle>
+                <Handle
+                  type="source"
+                  position={Position.Bottom}
+                  style={{
+                    width: "25px",
+                    height: "25px",
+                    cursor: "pointer",
+                    backgroundColor: "white",
+                  }}
+                >
+                  <IconCirclePlus
+                    size={25}
+                    onClick={openPopup}
+                    className="icon-plus-hover"
+                    color="#296452"
+                  />
+                </Handle>
                 <Handle type="target" position={Position.Top} />
               </>
             )}
@@ -146,44 +199,25 @@ const FamilyMemberNode: React.FC<NodeProps<FamilyMemberNodeType>> = memo(
             </p>
           </div>
         </div>
+        <Modal opened={openModal} onClose={closePopup} title="Add Connection">
+          <div className="flex justify-center items-center">
+            <Button onClick={closePopup}>Close</Button>
+          </div>
+        </Modal>
       </div>
     );
   }
 );
-interface FamilyEdgeProps extends EdgeProps {
-  sourceX: number;
-  sourceY: number;
-  targetX: number;
-  targetY: number;
-  handleSource?: string;
-  handleTarget?: string;
-}
 
-const FamilyEdge: React.FC<FamilyEdgeProps> = memo(
-  ({ sourceX, sourceY, targetX, targetY, handleSource, handleTarget }) => {
-    console.log("handleSource:", handleSource); // Kiểm tra handleSource
-    console.log("handleTarget:", handleTarget); // Kiểm tra handleTarget
-
-    const edgePath = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
-    console.log("edgePath:", edgePath); // Kiểm tra đường path đã tính toán
-
-    return (
-      <>
-        <path d={edgePath} className="stroke-[2] stroke-gray-300" fill="none" />
-      </>
-    );
-  }
-);
 const nodeTypes: NodeTypes = {
   familyMember: FamilyMemberNode,
 };
 
-const edgeTypes = {
-  family: FamilyEdge,
-};
 const FamilyTree: React.FC = () => {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNode);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(
+    initialEdges.filter((edge) => edge !== undefined)
+  );
 
   return (
     <Box style={{ width: "100%", height: "100%" }}>
@@ -193,7 +227,6 @@ const FamilyTree: React.FC = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
         fitView
       >
         <Background />
