@@ -75,73 +75,21 @@ const FamilyMemberNode: React.FC<NodeProps<FamilyMemberNodeType>> = memo(
       >
         {data.generation === 1 ? (
           <>
-            {data.wifeId && (
-              <>
-                <Handle
-                  type="source"
-                  position={Position.Right}
-                  id={`source-right-${id}`}
-                />
-                <Handle
-                  type="source"
-                  position={Position.Bottom}
-                  id={`source-bottom-${id}`}
-                />
-              </>
-            )}
-            {data.husbandId && (
-              <Handle
-                type="target"
-                position={Position.Left}
-                id={`target-left-${id}`}
-              />
-            )}
+            {data.wifeId && <Handle type="source" position={Position.Bottom} />}
           </>
         ) : (
           <>
             {isMarried && isParentChild && (
               <>
-                <Handle
-                  type="source"
-                  position={Position.Right}
-                  id={`source-right-${id}`}
-                />
-                <Handle
-                  type="source"
-                  position={Position.Bottom}
-                  id={`source-bottom-${id}`}
-                />
-                <Handle
-                  type="target"
-                  position={Position.Top}
-                  id={`target-top-${id}`}
-                />
+                <Handle type="source" position={Position.Bottom} />
+                <Handle type="target" position={Position.Top} />
               </>
-            )}
-            {isMarried && !isParentChild && (
-              <Handle
-                type="target"
-                position={Position.Left}
-                id={`target-right-${id}`}
-              />
             )}
             {!isMarried && (
               <>
-                <Handle
-                  type="source"
-                  position={Position.Right}
-                  id={`source-right-${id}`}
-                />
-                <Handle
-                  type="source"
-                  position={Position.Bottom}
-                  id={`source-bottom-${id}`}
-                />
-                <Handle
-                  type="target"
-                  position={Position.Top}
-                  id={`target-top-${id}`}
-                />
+                <Handle type="source" position={Position.Right} />
+                <Handle type="source" position={Position.Bottom} />
+                <Handle type="target" position={Position.Top} />
               </>
             )}
           </>

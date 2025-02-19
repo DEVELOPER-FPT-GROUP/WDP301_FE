@@ -17,6 +17,7 @@ function calculatePositions(nodes: Node<FamilyMemberData>[]) {
   const positions: { [key: string]: { x: number; y: number } } = {};
   let previousGenerationY = 100;
   const offsetX = 250;
+  const spouseOffsetX = 200;
 
   // Xử lý thế hệ đầu tiên (chỉ có 2 node: vợ - chồng)
   const firstGenNodes = generationLevels[1];
@@ -26,7 +27,7 @@ function calculatePositions(nodes: Node<FamilyMemberData>[]) {
 
     if (wifeNode && husbandNode) {
       positions[wifeNode.id] = { x: 500, y: previousGenerationY };
-      positions[husbandNode.id] = { x: 750, y: previousGenerationY };
+      positions[husbandNode.id] = { x: 700, y: previousGenerationY };
     }
   }
 
@@ -71,12 +72,24 @@ function calculatePositions(nodes: Node<FamilyMemberData>[]) {
       // Tính toán vị trí cho thế hệ này
       const totalWidth = sortedNodes.length * offsetX;
       const startX = 600 - totalWidth / 2;
+      let previousNode: Node<FamilyMemberData> | null = null;
 
       sortedNodes.forEach((node, index) => {
-        positions[node.id] = {
-          x: startX + index * offsetX,
-          y: previousGenerationY,
-        };
+        if (
+          node.id === previousNode?.data.husbandId ||
+          node.id === previousNode?.data.wifeId
+        ) {
+          positions[node.id] = {
+            x: startX + (index - 1) * offsetX + spouseOffsetX,
+            y: previousGenerationY,
+          };
+        } else {
+          positions[node.id] = {
+            x: startX + index * offsetX,
+            y: previousGenerationY,
+          };
+        }
+        previousNode = node;
       });
 
       previousGenerationY += 300;
