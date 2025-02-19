@@ -18,6 +18,7 @@ import {
   useGetApi,
   usePostApi,
 } from "~/infrastructure/common/api/hooks/requestCommonHooks";
+import AddChildModal, { type ChildFormData } from "./addChildModal";
 function formatDate(isoDate: string) {
   const date = new Date(isoDate);
 
@@ -35,6 +36,9 @@ type FamilyMemberNodeProps = NodeProps<FamilyMemberNodeType> & {
     options?: RefetchOptions | undefined
   ) => Promise<QueryObserverResult<any, any>>;
 };
+interface ChildFormDataWithBirthOrder extends ChildFormData {
+  birthOrder: number;
+}
 export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
   ({ data, refetch }) => {
     const imageUrl =
@@ -56,33 +60,13 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
           return `Thế hệ thứ ${generation + 1}`;
       }
     };
-    const { mutate, isError, error } = usePostApi<SpouseFormData, any>({
+
+    const addSpouseApi = usePostApi<SpouseFormData, any>({
       endpoint: "members/add-spouse",
     });
-    const handleSpouseSubmit = (values: SpouseFormData) => {
-      console.log("Spouse data:", values);
-
-      mutate(values, {
-        onSuccess: () => {
-          console.log("Thêm vợ/chồng thành công!");
-          // Gọi lại API để cập nhật dữ liệu
-          refetch();
-        },
-        onError: (error) => {
-          console.error("Lỗi khi thêm vợ/chồng:", error);
-        },
-      });
-      refetch();
-
-      // Xử lý logic thêm vợ/chồng ở đây
-    };
-
-    // Điều kiện xử lý kết nối giữa vợ chồng và cha mẹ con cái
-    const isMarried =
-      (data.spouse.husbandId !== null && data.spouse.husbandId !== undefined) ||
-      (data.spouse.wifeId !== null && data.spouse.wifeId !== undefined);
-    const isParentChild = data.parent !== null;
-
+    const addChildApi = usePostApi<ChildFormDataWithBirthOrder, any>({
+      endpoint: "members/add-child",
+    });
     // State to handle pop-up visibility
     const [openModalSpouse, setOpenModalSpouse] = useState(false);
     const [openModalChild, setOpenModalChild] = useState(false);
@@ -96,6 +80,50 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
     const closePopupSpouse = () => {
       setOpenModalSpouse(false);
     };
+    const handleSpouseSubmit = (values: SpouseFormData) => {
+      console.log("Spouse data:", values);
+
+      addSpouseApi.mutate(values, {
+        onSuccess: () => {
+          console.log("Thêm vợ/chồng thành công!");
+          // Gọi lại API để cập nhật dữ liệu
+          refetch();
+        },
+        onError: (error) => {
+          console.error("Lỗi khi thêm vợ/chồng:", error);
+        },
+      });
+      refetch();
+
+      // Xử lý logic thêm vợ/chồng ở đây
+    };
+    const handleAddChild = (values: ChildFormData) => {
+      const birthOrder = data.children ? data.children.length + 1 : 1;
+
+      // Thêm birthOrder vào dữ liệu gửi lên server
+      const childData = {
+        ...values,
+        birthOrder,
+      };
+      addChildApi.mutate(childData, {
+        onSuccess: () => {
+          console.log("Thêm con cái thành công!");
+          // Gọi lại API để cập nhật dữ liệu
+          refetch();
+        },
+        onError: (error) => {
+          console.error("Lỗi khi thêm con cái:", error);
+        },
+      });
+      refetch();
+      console.log("Child data:", childData);
+    };
+
+    // Điều kiện xử lý kết nối giữa vợ chồng và cha mẹ con cái
+    const isMarried =
+      (data.spouse.husbandId !== null && data.spouse.husbandId !== undefined) ||
+      (data.spouse.wifeId !== null && data.spouse.wifeId !== undefined);
+    const isParentChild = data.parent !== null;
 
     // Track hover state
     const name = data.firstName + " " + data.middleName + " " + data.lastName;
@@ -138,7 +166,24 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
           <>
             {isMarried && isParentChild && (
               <>
-                <Handle type="source" position={Position.Bottom} />
+                <Handle
+                  type="source"
+                  position={Position.Bottom}
+                  style={{
+                    width: "25px",
+                    height: "25px",
+                    cursor: "pointer",
+                    backgroundColor: "white",
+                  }}
+                >
+                  <IconCirclePlus
+                    size={25}
+                    onClick={openPopupChild}
+                    className="icon-plus-hover"
+                    color="#296452"
+                  />
+                </Handle>
+
                 <Handle type="target" position={Position.Top} />
               </>
             )}
@@ -253,15 +298,12 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
             </div>
           </div>
         </div>
-        <Modal
+        <AddChildModal
           opened={openModalChild}
-          onClose={closePopupChild}
-          title="Add Connection Child"
-        >
-          <div className="flex justify-center items-center">
-            <Button onClick={closePopupChild}>Close</Button>
-          </div>
-        </Modal>
+          onClose={() => setOpenModalChild(false)}
+          onSubmit={handleAddChild}
+          memberId={data.memberId} // ID của cha/mẹ
+        />
         <AddSpouseForm
           opened={openModalSpouse}
           onClose={closePopupSpouse}
