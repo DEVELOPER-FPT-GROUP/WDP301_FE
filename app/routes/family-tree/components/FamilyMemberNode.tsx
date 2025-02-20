@@ -14,11 +14,8 @@ import type {
   QueryObserverResult,
   RefetchOptions,
 } from "@tanstack/react-query";
-import {
-  useGetApi,
-  usePostApi,
-} from "~/infrastructure/common/api/hooks/requestCommonHooks";
-import AddChildModal, { type ChildFormData } from "./addChildModal";
+import { usePostApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
+import AddChildModal, { type ChildFormData } from "./AddChildModal";
 function formatDate(isoDate: string) {
   const date = new Date(isoDate);
 
@@ -120,10 +117,18 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
     };
 
     // Điều kiện xử lý kết nối giữa vợ chồng và cha mẹ con cái
+
     const isMarried =
       (data.spouse.husbandId !== null && data.spouse.husbandId !== undefined) ||
       (data.spouse.wifeId !== null && data.spouse.wifeId !== undefined);
     const isParentChild = data.parent !== null;
+    // if (data.memberId === "67b648c8d542a3869115b9c5") {
+    //   console.log("husbandId", data.spouse.husbandId);
+    //   console.log("wifeId", data.spouse.wifeId);
+    //   console.log("isMarried", isMarried);
+    //   console.log("parent", data.parent);
+    //   console.log("isParentChild", isParentChild);
+    // }
 
     // Track hover state
     const name = data.firstName + " " + data.middleName + " " + data.lastName;

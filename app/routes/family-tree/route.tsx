@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from "react";
+import React, { memo, useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -6,10 +6,7 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
-  Handle,
-  Position,
   type NodeTypes,
-  type NodeProps,
   type Edge,
 } from "@xyflow/react";
 import type {
@@ -36,9 +33,15 @@ const FamilyTree: React.FC = () => {
     endpoint: "members/get-members-in-family/:id",
     urlParams: { id: "67b09900dc5227c02b91d823" },
   });
-  const nodeTypes: NodeTypes = {
-    familyMember: (props) => <FamilyMemberNode {...props} refetch={refetch} />,
-  };
+  const nodeTypes = useMemo(
+    () => ({
+      familyMember: (props: any) => (
+        <FamilyMemberNode {...props} refetch={refetch} />
+      ),
+    }),
+    [refetch]
+  );
+
   useEffect(() => {
     if (isSuccess) {
       console.log("data: ", data.data);
@@ -95,7 +98,7 @@ const FamilyTree: React.FC = () => {
       setEdges(formattedEdges);
     }
   }, [data, isSuccess, setNodes, setEdges]);
-
+  const [interactiveStatus, setInteractiveStatus] = useState(true);
   return (
     <Box style={{ width: "100%", height: "100%" }}>
       <ReactFlow
@@ -107,7 +110,9 @@ const FamilyTree: React.FC = () => {
         fitView
       >
         <Background />
-        <Controls />
+        <Controls
+          onInteractiveChange={(status) => setInteractiveStatus(!status)}
+        />
         <MiniMap />
       </ReactFlow>
     </Box>
