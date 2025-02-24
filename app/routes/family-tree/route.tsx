@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -6,7 +6,6 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
-  type NodeTypes,
   type Edge,
 } from "@xyflow/react";
 import type {
@@ -28,6 +27,7 @@ const FamilyTree: React.FC = () => {
     []
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [isInteractive, setIsInteractive] = useState(true);
   const { data, isSuccess, refetch } = useGetApi({
     queryKey: ["family-tree"],
     endpoint: "members/get-members-in-family/:id",
@@ -44,8 +44,6 @@ const FamilyTree: React.FC = () => {
 
   useEffect(() => {
     if (isSuccess) {
-      console.log("data: ", data.data);
-
       const dataFormat = data.data.map((node: BaseFamilyMemberData) => {
         const formattedNode = {
           id: node.memberId,
@@ -98,7 +96,6 @@ const FamilyTree: React.FC = () => {
       setEdges(formattedEdges);
     }
   }, [data, isSuccess, setNodes, setEdges]);
-  const [interactiveStatus, setInteractiveStatus] = useState(true);
   return (
     <Box style={{ width: "100%", height: "100%" }}>
       <ReactFlow
@@ -107,12 +104,17 @@ const FamilyTree: React.FC = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
+        elementsSelectable={!isInteractive}
+        nodesDraggable={!isInteractive}
+        nodesConnectable={!isInteractive}
         fitView
       >
         <Background />
         <Controls
-          onInteractiveChange={(status) => setInteractiveStatus(!status)}
-        />
+          onInteractiveChange={(value) => {
+            setIsInteractive(value);
+          }}
+        ></Controls>
         <MiniMap />
       </ReactFlow>
     </Box>

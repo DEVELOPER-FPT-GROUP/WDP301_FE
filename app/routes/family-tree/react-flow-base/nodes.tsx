@@ -13,6 +13,7 @@ function calculatePositions(nodes: Node<BaseFamilyMemberData>[]) {
     }
     generationLevels[node.data.generation].push(node);
   });
+
   const positions: { [key: string]: { x: number; y: number } } = {};
   let previousGenerationY = 100;
   const offsetX = 250;
@@ -71,22 +72,24 @@ function calculatePositions(nodes: Node<BaseFamilyMemberData>[]) {
       });
 
       // Tính toán vị trí cho thế hệ này
-      const totalWidth = sortedNodes.length * offsetX;
-      const startX = 600 - totalWidth / 2;
+      // const totalWidth = sortedNodes.length * offsetX;
+      // const startX = 600 - totalWidth / 2;
       let previousNode: Node<BaseFamilyMemberData> | null = null;
-
+      console.log("sortedNodes", sortedNodes);
       sortedNodes.forEach((node, index) => {
         if (
           node.id === previousNode?.data.spouse?.husbandId ||
           node.id === previousNode?.data.spouse?.wifeId
         ) {
           positions[node.id] = {
-            x: startX + (index - 1) * offsetX + spouseOffsetX,
+            // x: startX + (index - 1) * offsetX + spouseOffsetX,
+            x: (index - 1) * offsetX + spouseOffsetX,
             y: previousGenerationY,
           };
         } else {
           positions[node.id] = {
-            x: startX + index * offsetX,
+            // x: startX + index * offsetX,
+            x: index * offsetX,
             y: previousGenerationY,
           };
         }

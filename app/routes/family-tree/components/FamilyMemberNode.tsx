@@ -8,7 +8,7 @@ import {
   IconHandMove,
   IconTrashFilled,
 } from "@tabler/icons-react";
-import { Menu, MenuItem, Modal, Button } from "@mantine/core";
+import { Menu, MenuItem } from "@mantine/core";
 import AddSpouseForm, { type SpouseFormData } from "./AddSpouseForm";
 import type {
   QueryObserverResult,
@@ -16,6 +16,7 @@ import type {
 } from "@tanstack/react-query";
 import { usePostApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import AddChildModal, { type ChildFormData } from "./AddChildModal";
+import "./styles.css";
 function formatDate(isoDate: string) {
   const date = new Date(isoDate);
 
@@ -122,13 +123,6 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
       (data.spouse.husbandId !== null && data.spouse.husbandId !== undefined) ||
       (data.spouse.wifeId !== null && data.spouse.wifeId !== undefined);
     const isParentChild = data.parent !== null;
-    // if (data.memberId === "67b648c8d542a3869115b9c5") {
-    //   console.log("husbandId", data.spouse.husbandId);
-    //   console.log("wifeId", data.spouse.wifeId);
-    //   console.log("isMarried", isMarried);
-    //   console.log("parent", data.parent);
-    //   console.log("isParentChild", isParentChild);
-    // }
 
     // Track hover state
     const name = data.firstName + " " + data.middleName + " " + data.lastName;
@@ -238,7 +232,7 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
         )}
 
         {/* Mantine Menu Dropdown */}
-        <div className="absolute top-2 right-2">
+        <div className=" menu-container absolute top-2 right-2">
           <Menu withArrow width={100}>
             <Menu.Target>
               <IconDotsVertical size={30} />
