@@ -97,7 +97,7 @@ const FamilyTree: React.FC = () => {
     }
   }, [data, isSuccess, setNodes, setEdges]);
   return (
-    <Box style={{ width: "100%", height: "100%" }}>
+    <Box style={{ height: "calc(100vh - 60px)" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -107,6 +107,7 @@ const FamilyTree: React.FC = () => {
         elementsSelectable={!isInteractive}
         nodesDraggable={!isInteractive}
         nodesConnectable={!isInteractive}
+        zoomOnDoubleClick={false}
         fitView
       >
         <Background />

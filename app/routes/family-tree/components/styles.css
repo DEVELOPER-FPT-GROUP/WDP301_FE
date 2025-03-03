@@ -1,9 +1,9 @@
-/* Giữ tất cả các phần tử trong React Flow không thể tương tác khi interactivity bị tắt */
-.react-flow__pane {
-  pointer-events: none; /* Vô hiệu hóa tất cả sự kiện con trỏ */
+.react-flow__node {
+  pointer-events: auto;
+  cursor: pointer;
 }
 
-/* Bật lại sự kiện con trỏ cho menu */
 .react-flow__node .menu-container {
-  pointer-events: auto; /* Bật sự kiện cho menu */
+  pointer-events: auto;
+  cursor: pointer;
 }

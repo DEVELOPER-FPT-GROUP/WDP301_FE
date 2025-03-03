@@ -6,7 +6,7 @@ import {
   Textarea,
   Radio,
 } from "@mantine/core";
-import { DateInput } from "@mantine/dates";
+import { DatePickerInput } from "@mantine/dates";
 import { useForm, yupResolver } from "@mantine/form";
 import * as Yup from "yup";
 
@@ -24,9 +24,7 @@ const childSchema = Yup.object().shape({
     .required("Tên là bắt buộc")
     .min(2, "Tên phải có ít nhất 2 ký tự")
     .max(50, "Tên không được quá 50 ký tự"),
-  dateOfBirth: Yup.date()
-    .required("Ngày sinh là bắt buộc")
-    .max(new Date(), "Ngày sinh không thể trong tương lai"),
+  dateOfBirth: Yup.date().required("Ngày sinh là bắt buộc"),
   gender: Yup.string()
     .required("Giới tính là bắt buộc")
     .oneOf(["male", "female"], "Giới tính không hợp lệ"),
@@ -57,7 +55,14 @@ interface AddChildModalProps {
 // Hàm định dạng ngày tháng
 const formatDateToISOString = (date: Date | null): string | null => {
   if (!date) return null;
-  return date.toISOString().split("T")[0];
+
+  // Lấy ngày, tháng, năm của đối tượng Date
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0"); // Thêm 1 vì getMonth() bắt đầu từ 0
+  const day = date.getDate().toString().padStart(2, "0");
+
+  // Trả về định dạng "YYYY-MM-DD"
+  return `${year}-${month}-${day}`;
 };
 
 const AddChildModal: React.FC<AddChildModalProps> = ({
@@ -81,6 +86,7 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
   });
 
   const handleSubmit = (values: ChildFormData) => {
+    console.log(`Before submit`, values);
     const formattedValues = {
       ...values,
       dateOfBirth: formatDateToISOString(
@@ -88,14 +94,18 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
       ),
       memberId, // Truyền ID của cha/mẹ
     };
-
     onSubmit(formattedValues);
     form.reset();
     onClose();
   };
 
+  const handleClose = () => {
+    form.reset(); // Reset form khi đóng modal
+    onClose(); // Đóng modal
+  };
+
   return (
-    <Modal opened={opened} onClose={onClose} title="Thêm Con" size="lg">
+    <Modal opened={opened} onClose={handleClose} title="Thêm Con" size="lg">
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
@@ -116,10 +126,12 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
             />
           </div>
 
-          <DateInput
+          <DatePickerInput
             label="Ngày sinh"
             placeholder="Chọn ngày sinh"
             {...form.getInputProps("dateOfBirth")}
+            maxDate={new Date()}
+            valueFormat="DD/MM/YYYY"
             clearable
           />
 

@@ -17,6 +17,10 @@ import type {
 import { usePostApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import AddChildModal, { type ChildFormData } from "./AddChildModal";
 import "./styles.css";
+import {
+  notifyError,
+  notifySuccess,
+} from "~/infrastructure/utils/notification/notification";
 function formatDate(isoDate: string) {
   const date = new Date(isoDate);
 
@@ -72,23 +76,31 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
       setOpenModalChild(true);
     };
 
-    const closePopupChild = () => {
-      setOpenModalChild(false);
-    };
-    const closePopupSpouse = () => {
-      setOpenModalSpouse(false);
-    };
     const handleSpouseSubmit = (values: SpouseFormData) => {
       console.log("Spouse data:", values);
 
       addSpouseApi.mutate(values, {
-        onSuccess: () => {
-          console.log("Thêm vợ/chồng thành công!");
+        onSuccess: (data) => {
+          console.log("Thêm vợ/chồng:", data);
+          const message = data?.message || "Thêm vợ/chồng thành công!";
+          const title = "Thành công";
+
+          // Hiển thị thông báo thành công
+          notifySuccess({
+            title: title,
+            message: message,
+          });
           // Gọi lại API để cập nhật dữ liệu
           refetch();
         },
         onError: (error) => {
+          const errorMessage =
+            (error as any).response?.data?.message || "Đã xảy ra lỗi!";
           console.error("Lỗi khi thêm vợ/chồng:", error);
+          notifyError({
+            title: "Lỗi",
+            message: errorMessage,
+          });
         },
       });
       refetch();
@@ -104,13 +116,24 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
         birthOrder,
       };
       addChildApi.mutate(childData, {
-        onSuccess: () => {
-          console.log("Thêm con cái thành công!");
+        onSuccess: (data) => {
+          console.log("Thêm con cái thành công: ", data);
+          const message = data?.message || "Thêm con cái thành công!";
+          notifySuccess({
+            title: "Thành công",
+            message: message,
+          });
           // Gọi lại API để cập nhật dữ liệu
           refetch();
         },
         onError: (error) => {
           console.error("Lỗi khi thêm con cái:", error);
+          const errorMessage =
+            (error as any).response?.data?.message || "Đã xảy ra lỗi!";
+          notifyError({
+            title: "Lỗi",
+            message: errorMessage,
+          });
         },
       });
       refetch();
@@ -128,7 +151,7 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
     const name = data.firstName + " " + data.middleName + " " + data.lastName;
     return (
       <div
-        className={`p-4 min-w-[200px] min-h-[200px] ${
+        className={`p-4 w-[200px] h-[200px] ${
           data.isAlive ? " bg-white " : "bg-gray-200"
         } border-2 rounded-lg shadow-lg transition-all duration-300 ${
           data.gender === "male"
@@ -305,9 +328,11 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
         />
         <AddSpouseForm
           opened={openModalSpouse}
-          onClose={closePopupSpouse}
+          onClose={() => setOpenModalSpouse(false)}
           onSubmit={handleSpouseSubmit}
           currentMemberId={data.memberId}
+          gender={data.gender}
+          fullName={name}
         />
       </div>
     );

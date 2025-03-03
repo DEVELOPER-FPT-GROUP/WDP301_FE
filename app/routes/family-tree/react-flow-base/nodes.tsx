@@ -1,8 +1,6 @@
 import type { Node } from "@xyflow/react";
 import type { BaseFamilyMemberData } from "./types";
 
-// Hàm tính toán vị trí cho các thế hệ
-
 function calculatePositions(nodes: Node<BaseFamilyMemberData>[]) {
   const generationLevels: { [key: number]: Node<BaseFamilyMemberData>[] } = {};
 
@@ -75,7 +73,7 @@ function calculatePositions(nodes: Node<BaseFamilyMemberData>[]) {
       // const totalWidth = sortedNodes.length * offsetX;
       // const startX = 600 - totalWidth / 2;
       let previousNode: Node<BaseFamilyMemberData> | null = null;
-      console.log("sortedNodes", sortedNodes);
+      // console.log("sortedNodes", sortedNodes);
       sortedNodes.forEach((node, index) => {
         if (
           node.id === previousNode?.data.spouse?.husbandId ||
@@ -101,12 +99,12 @@ function calculatePositions(nodes: Node<BaseFamilyMemberData>[]) {
 
   return positions;
 }
-// Tính toán vị trí cho các node
 
+// Tính toán vị trí cho các node
 export function initialNode(data: Node<BaseFamilyMemberData>[]) {
   const positions = calculatePositions(data);
   data.forEach((node) => {
-    node.position = positions[node.id];
+    node.position = positions[node.id] || { x: 0, y: 0 };
   });
   return data;
 }
