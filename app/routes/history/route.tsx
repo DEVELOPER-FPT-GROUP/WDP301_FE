@@ -73,22 +73,49 @@ const route = () => {
   const [deleteModalOpened, setDeleteModalOpened] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [viewModalOpened, setViewModalOpened] = useState(false);
+  const resizeImage = (file: File, maxWidth = 800, maxHeight = 800) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
 
-  const handleImageUpload = (files: File[] | null) => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height *= maxWidth / width;
+              width = maxWidth;
+            } else {
+              width *= maxHeight / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.7)); // Chất lượng 70%
+        };
+      };
+      reader.onerror = reject;
+    });
+  };
+  const handleImageUpload = async (files: File[] | null) => {
     if (!files) return;
-    const filePromises = files.map((file) => {
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file); // Chuyển file sang Base64
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-      });
-    });
 
-    Promise.all(filePromises).then((base64Files) => {
-      form.setFieldValue("base64Images", base64Files);
-      setPreviewImages(base64Files);
-    });
+    const resizedImages = await Promise.all(
+      files.map((file) => resizeImage(file))
+    );
+    console.log(resizedImages);
+
+    form.setFieldValue("base64Images", resizedImages);
+    setPreviewImages(resizedImages);
   };
 
   const { data, isSuccess, refetch } = useGetApi({
@@ -151,6 +178,7 @@ const route = () => {
   const openModal = (story?: FamilyStory) => {
     setSelectedStory(story || null);
     if (story) {
+      console.log(story.base64Images);
       form.setValues({
         historicalRecordTitle: story.historicalRecordTitle,
         historicalRecordSummary: story.historicalRecordSummary,
@@ -159,6 +187,8 @@ const route = () => {
         endDate: story.endDate ? new Date(story.endDate) : "",
         base64Images: story.base64Images || [],
       });
+      setPreviewImages(story.base64Images || []);
+      console.log("Preview images:", previewImages);
     } else {
       form.reset();
     }
@@ -521,7 +551,6 @@ const route = () => {
                         style={{
                           objectFit: "cover",
                           width: "100%",
-                          height: "150px",
                         }}
                       />
                     ))}

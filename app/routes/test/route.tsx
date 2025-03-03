@@ -16,6 +16,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { DateTimePicker } from "@mantine/dates";
+import { TableComponent } from "~/infrastructure/common/components/component/Table";
 
 export const meta = () => [{ title: "Sự kiện" }];
 
@@ -127,6 +128,17 @@ export default function EventPage() {
     }
     setOpened(true);
   };
+  const users = [
+    { id: 1, name: "Nguyễn Văn A", email: "a@gmail.com" },
+    { id: 2, name: "Trần Thị B", email: "b@gmail.com" },
+    { id: 3, name: "Lê Văn C", email: "c@gmail.com" },
+  ];
+
+  const userColumns = [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Họ và Tên" },
+    { key: "email", label: "Email" },
+  ];
 
   return (
     <AppShell padding="lg" styles={{ main: { backgroundColor: "#f5f2dc" } }}>
@@ -178,6 +190,7 @@ export default function EventPage() {
           </Button>
         </Group>
       </Stack>
+      <TableComponent columns={userColumns} endpoint="" />
       <Modal
         opened={opened}
         title={<Title order={2}>Tạo sự kiện mới</Title>}
