@@ -1,0 +1,9 @@
+.react-flow__node {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.react-flow__node .menu-container {
+  pointer-events: auto;
+  cursor: pointer;
+}

@@ -56,7 +56,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         <MenuItemsRenderer items={menuKeys} userRoles={[]} />
       </AppShell.Navbar>
       <AppShell.Main
-        style={{ height: "calc(100vh - 60px)", width: "calc(100vw -300px)" }}
+        style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}
       >
         {children}
       </AppShell.Main>
