@@ -6,57 +6,47 @@ import {
   Select,
   Group,
   Loader,
+  ActionIcon,
+  Center,
 } from "@mantine/core";
-import axios from "axios";
+import { IconEdit, IconTrash } from "@tabler/icons-react";
+import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 
 interface TableProps<T> {
   columns: { key: keyof T; label: string }[];
   endpoint: string;
+  onEdit: (row: T) => void;
+  onDelete: (row: T) => void;
 }
 
-export function TableComponent<T>({ columns, endpoint }: TableProps<T>) {
+export function TableComponent<T extends { id: string }>({
+  columns,
+  endpoint,
+  onEdit,
+  onDelete,
+}: TableProps<T>) {
   const perPageOptions = [10, 20, 50];
-  const [data, setData] = useState<T[]>([]);
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState(""); // Chỉ update khi bấm Enter
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(perPageOptions[0]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false);
 
-  // Fetch data từ API
-  const fetchData = async () => {
-    setLoading(true);
-    console.log(currentPage, perPage, debouncedSearch);
-
-    try {
-      const response = await axios.get(endpoint, {
-        params: { page: currentPage, limit: perPage, search: debouncedSearch },
-      });
-      setData(response.data.items);
-      setTotalPages(response.data.totalPages);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [currentPage, perPage, debouncedSearch]);
+  const { data, isLoading, isFetching, refetch } = useGetApi({
+    queryKey: ["users", currentPage, perPage, debouncedSearch],
+    endpoint,
+    queryParams: { page: currentPage, limit: perPage, search: debouncedSearch },
+  });
 
   return (
-    <div style={{ padding: "16px", borderRadius: "8px", background: "#fff" }}>
-      {/* Ô tìm kiếm */}
+    <>
       <Group justify="space-between" mb="md">
         <TextInput
           placeholder="Tìm kiếm..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)} // Chỉ thay đổi search tạm thời
+          onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              setDebouncedSearch(search); // Chỉ cập nhật khi bấm Enter
+              setDebouncedSearch(search);
               setCurrentPage(1);
             }
           }}
@@ -64,33 +54,45 @@ export function TableComponent<T>({ columns, endpoint }: TableProps<T>) {
         />
       </Group>
 
-      {/* Bảng dữ liệu */}
-      {loading ? (
-        <Loader />
+      {isLoading || isFetching ? (
+        <Center>
+          <Loader />
+        </Center>
       ) : (
-        <Table striped highlightOnHover withTableBorder>
+        <Table striped highlightOnHover withTableBorder horizontalSpacing="sm">
           <Table.Thead>
             <Table.Tr>
               {columns.map((col) => (
                 <Table.Th key={col.key as string}>{col.label}</Table.Th>
               ))}
+              <Table.Th>Hành động</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {data.length > 0 ? (
-              data.map((row, rowIndex) => (
-                <Table.Tr key={rowIndex}>
+            {data?.data.length > 0 ? (
+              data.data.map((row: T) => (
+                <Table.Tr key={row.id}>
                   {columns.map((col) => (
                     <Table.Td key={col.key as string}>
                       {String(row[col.key])}
                     </Table.Td>
                   ))}
+                  <Table.Td>
+                    <Group gap="xs">
+                      <ActionIcon color="blue" onClick={() => onEdit(row)}>
+                        <IconEdit size={18} />
+                      </ActionIcon>
+                      <ActionIcon color="red" onClick={() => onDelete(row)}>
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Group>
+                  </Table.Td>
                 </Table.Tr>
               ))
             ) : (
               <Table.Tr>
                 <Table.Td
-                  colSpan={columns.length}
+                  colSpan={columns.length + 1}
                   style={{ textAlign: "center", color: "gray" }}
                 >
                   Không có bản ghi nào!
@@ -102,31 +104,25 @@ export function TableComponent<T>({ columns, endpoint }: TableProps<T>) {
       )}
 
       <Group justify="space-between" align="center" mt="md">
-        {/* Hiển thị số bản ghi */}
         <Group gap="xs" align="center">
           <span>Hiển thị</span>
           <Select
             data={perPageOptions.map((opt) => opt.toString())}
             value={perPage.toString()}
-            onChange={(value) => {
-              setPerPage(Number(value));
-              setCurrentPage(1); // Reset về trang đầu khi thay đổi limit
-            }}
+            onChange={(value) => setPerPage(Number(value))}
             allowDeselect={false}
-            w={60} // 👈 Giảm kích thước Select
-            style={{ minWidth: "50px", textAlign: "center" }} // 👈 Giữ tối thiểu 50px
+            w={60}
+            style={{ minWidth: "50px", textAlign: "center" }}
             size="xs"
           />
           <span>bản ghi / trang</span>
         </Group>
-
-        {/* Pagination */}
         <Pagination
-          total={totalPages}
+          total={data?.totalPages || 1}
           value={currentPage}
           onChange={setCurrentPage}
         />
       </Group>
-    </div>
+    </>
   );
 }
