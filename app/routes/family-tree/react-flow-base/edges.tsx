@@ -3,7 +3,6 @@ import type { BaseFamilyMemberData } from "./types";
 
 export const createEdges = (nodes: Node<BaseFamilyMemberData>[]) => {
   let validChildIds = new Set<string>(); // Lưu các childId hợp lệ của thế hệ trước
-
   return nodes
     .sort((a, b) => a.data.generation - b.data.generation) // Sắp xếp theo thế hệ tăng dần
     .flatMap((parentNode) => {
@@ -30,7 +29,6 @@ export const createEdges = (nodes: Node<BaseFamilyMemberData>[]) => {
           })
           .map((childId) => {
             currentValidChildIds.push(childId); // Lưu childId hợp lệ của thế hệ này
-
             return {
               id: `e${parentNode.id}-${childId}`,
               source: parentNode.id,
@@ -42,8 +40,8 @@ export const createEdges = (nodes: Node<BaseFamilyMemberData>[]) => {
             };
           }) || [];
 
-      // Cập nhật danh sách validChildIds cho thế hệ sau
-      validChildIds = new Set(currentValidChildIds);
+      // Cập nhật danh sách validChildIds cho thế hệ sau ngay lập tức
+      validChildIds = new Set([...validChildIds, ...currentValidChildIds]);
 
       return edges;
     });
