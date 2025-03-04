@@ -9,8 +9,8 @@ import {
 } from "react-router";
 import "@mantine/core/styles.css";
 import "@xyflow/react/dist/style.css";
+import "@mantine/notifications/styles.css";
 import "./app.css";
-
 import { createTheme, MantineProvider } from "@mantine/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -21,6 +21,7 @@ import {
   GeneralError,
   NotFound,
 } from "./infrastructure/common/components/error-screen";
+import { Notifications } from "@mantine/notifications";
 import { Notifications } from "@mantine/notifications";
 
 const queryClient = new QueryClient();

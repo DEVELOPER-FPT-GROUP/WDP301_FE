@@ -42,7 +42,7 @@ class AxiosService {
 					return this.handle401Error(error);
 				}
 				return Promise.reject(error);
-			},
+			}
 		);
 	}
 
