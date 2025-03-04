@@ -19,7 +19,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useEffect, useState } from "react";
-import { SolarDate, LunarDate } from "@nghiavuive/lunar_date_vi";
+import { SolarDate } from "@nghiavuive/lunar_date_vi";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin, {
@@ -51,10 +51,178 @@ export default function EventPage() {
   });
   const [showCalendar, setShowCalendar] = useState(true);
   const [selectedEvents, setSelectedEvents] = useState([]);
-  const { data } = useGetApi({
-    queryKey: ["events"],
-    endpoint: "events",
-  });
+  // const { data } = useGetApi({
+  //   queryKey: ["events"],
+  //   endpoint: "events",
+  // });
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const handleImageUpload = (files: File[]) => {
+    setEventData({ ...eventData, images: files });
+    const previews = files.map((file) => URL.createObjectURL(file));
+    setPreviewImages(previews);
+  };
+  const [data, setData] = useState([
+    {
+      event_id: 1,
+      created_by: 1,
+      event_scope: "FAMILY",
+      event_type: "ANNIVERSARY",
+      event_name: "Giỗ tổ Nguyễn Văn A",
+      event_description: "Ngày giỗ ông tổ Nguyễn Văn A.",
+      gregorian_event_date: "2025-03-15",
+      lunar_event_date: "2025-02-05",
+      recurrence_rule: "YEARLY",
+      end_recurrence_date: null,
+      location: "Nhà thờ họ Nguyễn",
+      created_at: "2025-02-17T10:00:00Z",
+      eventParticipants: [
+        {
+          participant_id: 1,
+          event_id: 1,
+          member_id: 1,
+          role_in_event: "Host",
+          rsvp_status: "Accepted",
+          member: {
+            id: 1,
+            firstName: "Nguyễn",
+            middleName: "Văn",
+            lastName: "A",
+          },
+        },
+        {
+          participant_id: 2,
+          event_id: 1,
+          member_id: 2,
+          role_in_event: "Guest",
+          rsvp_status: "Pending",
+          member: {
+            id: 2,
+            firstName: "Trần",
+            middleName: "Thị",
+            lastName: "B",
+          },
+        },
+      ],
+      media: [
+        {
+          media_id: 1,
+          owner_id: 1,
+          url: "/kkk.jpg",
+          ownerType: "Event",
+          fileName: "gioto.jpg",
+          caption: "Hình ảnh Giỗ tổ Nguyễn Văn A",
+          mimeType: "image/jpeg",
+          size: 2048,
+          created_at: "2025-02-17T10:30:00Z",
+          updated_at: "2025-02-17T10:30:00Z",
+        },
+        {
+          media_id: 2,
+          owner_id: 2,
+          url: "/kkk.jpg",
+          ownerType: "Event",
+          fileName: "sinhnhatB.jpg",
+          caption: "Sinh nhật Bà B",
+          mimeType: "image/jpeg",
+          size: 1024,
+          created_at: "2025-02-17T11:30:00Z",
+          updated_at: "2025-02-17T11:30:00Z",
+        },
+        {
+          media_id: 2,
+          owner_id: 2,
+          url: "/kkk.jpg",
+          ownerType: "Event",
+          fileName: "sinhnhatB.jpg",
+          caption: "Sinh nhật Bà B",
+          mimeType: "image/jpeg",
+          size: 1024,
+          created_at: "2025-02-17T11:30:00Z",
+          updated_at: "2025-02-17T11:30:00Z",
+        },
+        {
+          media_id: 2,
+          owner_id: 2,
+          url: "/kkk.jpg",
+          ownerType: "Event",
+          fileName: "sinhnhatB.jpg",
+          caption: "Sinh nhật Bà B",
+          mimeType: "image/jpeg",
+          size: 1024,
+          created_at: "2025-02-17T11:30:00Z",
+          updated_at: "2025-02-17T11:30:00Z",
+        },
+      ],
+    },
+    {
+      event_id: 2,
+      created_by: 2,
+      event_scope: "FAMILY",
+      event_type: "BIRTHDAY",
+      event_name: "Sinh nhật Bà Nguyễn Thị B",
+      event_description: "Sinh nhật bà Nguyễn Thị B.",
+      gregorian_event_date: "2025-03-20",
+      lunar_event_date: "2025-05-10",
+      recurrence_rule: "YEARLY",
+      end_recurrence_date: null,
+      location: "Nhà Bà B",
+      created_at: "2025-02-17T11:00:00Z",
+      eventParticipants: [
+        {
+          participant_id: 1,
+          event_id: 1,
+          member_id: 1,
+          role_in_event: "Host",
+          rsvp_status: "Accepted",
+          member: {
+            id: 1,
+            firstName: "Nguyễn",
+            middleName: "Văn",
+            lastName: "A",
+          },
+        },
+        {
+          participant_id: 2,
+          event_id: 1,
+          member_id: 2,
+          role_in_event: "Guest",
+          rsvp_status: "Pending",
+          member: {
+            id: 2,
+            firstName: "Trần",
+            middleName: "Thị",
+            lastName: "B",
+          },
+        },
+      ],
+      media: [
+        {
+          media_id: 1,
+          owner_id: 1,
+          url: "/kkk.jpg",
+          ownerType: "Event",
+          fileName: "gioto.jpg",
+          caption: "Hình ảnh Giỗ tổ Nguyễn Văn A",
+          mimeType: "image/jpeg",
+          size: 2048,
+          created_at: "2025-02-17T10:30:00Z",
+          updated_at: "2025-02-17T10:30:00Z",
+        },
+        {
+          media_id: 2,
+          owner_id: 2,
+          url: "/kkk.jpg",
+          ownerType: "Event",
+          fileName: "sinhnhatB.jpg",
+          caption: "Sinh nhật Bà B",
+          mimeType: "image/jpeg",
+          size: 1024,
+          created_at: "2025-02-17T11:30:00Z",
+          updated_at: "2025-02-17T11:30:00Z",
+        },
+      ],
+    },
+  ]);
   const [dateTitle, setDateTitle] = useState("hôm nay");
 
   const handleDateClick = (info: DateClickArg) => {
@@ -141,7 +309,78 @@ export default function EventPage() {
   }, []);
 
   const handleCreateEvent = () => {
-    console.log("Sự kiện:", { eventTitle, eventDescription });
+    console.log("Event Created");
+    const newEvent = {
+      event_id: 3,
+      created_by: 3,
+      event_scope: "BRANCH",
+      event_type: "MARRIAGE",
+      event_name: "Đám cưới Nguyễn Thị C",
+      event_description: "Đám cưới Nguyễn Thị C",
+      gregorian_event_date: "2025-02-21",
+      lunar_event_date: "2025-01-25",
+      recurrence_rule: "YEARLY",
+      end_recurrence_date: null,
+      location: "Trống hồng place",
+      created_at: "2025-02-17T11:00:00Z",
+      eventParticipants: [
+        {
+          participant_id: 1,
+          event_id: 1,
+          member_id: 1,
+          role_in_event: "Host",
+          rsvp_status: "Accepted",
+          member: {
+            id: 1,
+            firstName: "Nguyễn",
+            middleName: "Văn",
+            lastName: "A",
+          },
+        },
+        {
+          participant_id: 2,
+          event_id: 1,
+          member_id: 2,
+          role_in_event: "Guest",
+          rsvp_status: "Pending",
+          member: {
+            id: 2,
+            firstName: "Trần",
+            middleName: "Thị",
+            lastName: "B",
+          },
+        },
+      ],
+      media: [
+        {
+          media_id: 1,
+          owner_id: 1,
+          url: "/kkk.jpg",
+          ownerType: "Event",
+          fileName: "gioto.jpg",
+          caption: "Hình ảnh Giỗ tổ Nguyễn Văn A",
+          mimeType: "image/jpeg",
+          size: 2048,
+          created_at: "2025-02-17T10:30:00Z",
+          updated_at: "2025-02-17T10:30:00Z",
+        },
+        {
+          media_id: 2,
+          owner_id: 2,
+          url: "/kkk.jpg",
+          ownerType: "Event",
+          fileName: "sinhnhatB.jpg",
+          caption: "Sinh nhật Bà B",
+          mimeType: "image/jpeg",
+          size: 1024,
+          created_at: "2025-02-17T11:30:00Z",
+          updated_at: "2025-02-17T11:30:00Z",
+        },
+      ],
+    };
+    setData([...data, newEvent]);
+
+    data.push(newEvent);
     setOpened(false);
   };
   const getLunarDate = (date: Date) => {
@@ -410,7 +649,7 @@ export default function EventPage() {
               })
             }
           />
-          <SimpleGrid cols={2} spacing="md">
+          {/* <SimpleGrid cols={2} spacing="md">
             <Select
               label="Loại sự kiện"
               data={eventsType}
@@ -426,7 +665,7 @@ export default function EventPage() {
               placeholder="Chọn phạm vi sự kiện"
               required
             />
-          </SimpleGrid>
+          </SimpleGrid> */}
           <SimpleGrid cols={2} spacing="md">
             <DateTimePicker
               clearable
@@ -480,12 +719,27 @@ export default function EventPage() {
             label="Tải lên hình ảnh"
             multiple
             placeholder="Chọn các hình ảnh"
+            onChange={handleImageUpload}
           />
+          {previewImages.length > 0 && (
+            <SimpleGrid cols={3} spacing="md">
+              {previewImages.map((src, index) => (
+                <Image
+                  key={index}
+                  src={src}
+                  alt={`Hình ảnh ${index + 1}`}
+                  radius="md"
+                />
+              ))}
+            </SimpleGrid>
+          )}
           <Group justify="right" mt="md">
             <Button variant="default" onClick={() => setOpened(false)}>
               Hủy
             </Button>
-            <Button color="brown">Tạo</Button>
+            <Button color="brown" onClick={handleCreateEvent}>
+              Tạo
+            </Button>
           </Group>
         </Stack>
       </Modal>

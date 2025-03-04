@@ -22,6 +22,7 @@ import {
   NotFound,
 } from "./infrastructure/common/components/error-screen";
 import { Notifications } from "@mantine/notifications";
+import { Notifications } from "@mantine/notifications";
 
 const queryClient = new QueryClient();
 export const links: Route.LinksFunction = () => [
@@ -85,7 +86,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body>
         <QueryClientProvider client={queryClient}>
           <MantineProvider theme={theme}>
-            <Notifications />
+            <Notifications /> {/* ✅ Thêm vào đây */}
             {children}
           </MantineProvider>
           <ReactQueryDevtools initialIsOpen={false} />

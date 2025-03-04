@@ -23,6 +23,11 @@ export const menuKeys: MenuItem[] = [
 		leftIcon: IconLabelImportant,
 		path: AppRoutes.PRIVATE.FAMILY_DEATH_ANNIVESARY,
 	},
+	{
+		label: "Quản lý lịch sử",
+		leftIcon: IconHierarchy,
+		path: AppRoutes.PRIVATE.MANAGE_FAMILY_HISTORY,
+	},
 	// {
 	// 	label: "Test",
 	// 	leftIcon: IconLabelImportant,

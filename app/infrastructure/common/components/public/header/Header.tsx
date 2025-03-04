@@ -5,6 +5,7 @@ import {
   Divider,
   Drawer,
   Group,
+  Image,
   ScrollArea,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -40,7 +41,8 @@ export default function Header() {
     >
       <header className="header">
         <Group justify="space-between" h="100%">
-          <MantineLogo size={30} />
+          {/* <MantineLogo size={30} /> */}
+          <Image src="/logo.png" height={50} width={50} />
           <Group h="100%" gap={20} visibleFrom="sm">
             {menuItems.map((item) => (
               <Link
