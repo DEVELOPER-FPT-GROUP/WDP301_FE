@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -19,6 +19,8 @@ import "./styles.css";
 import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import { FamilyMemberNode } from "./components/FamilyMemberNode";
 import { CreateFamilyNode } from "./components/CreateFamilyNode";
+import { Constants } from "~/infrastructure/core/constants";
+import { jwtDecode } from "jwt-decode";
 
 export const meta = () => {
   return [{ title: "Cây Gia Đình" }];
@@ -38,12 +40,25 @@ const FamilyTree: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<NodeTypes>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [isInteractive, setIsInteractive] = useState(true);
+  const getFamilyIdFromToken = () => {
+    const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
+    if (!token) return null;
+
+    try {
+      const decoded: any = jwtDecode(token);
+      console.log(decoded);
+      return decoded.familyId; // 🛠️ Trích xuất memberId từ payload
+    } catch (error) {
+      console.error("Lỗi khi giải mã token:", error);
+      return null;
+    }
+  };
   // Lấy familyId từ localStorage
   // const familyId = localStorage.getItem("familyId") || "";
-  const familyId =
-    localStorage.getItem("familyId") || "67b09900dc5227c02b91d823";
-
+  // const familyId =
+  //   localStorage.getItem("familyId") || "67b09900dc5227c02b91d823";
+  const familyId = getFamilyIdFromToken();
   // State để kiểm tra xem có familyId hợp lệ không
   const [hasFamilyId, setHasFamilyId] = useState(!!familyId);
 
@@ -54,11 +69,14 @@ const FamilyTree: React.FC = () => {
     // Không sử dụng thuộc tính enabled vì hook không hỗ trợ
   });
 
-  const handleFamilyCreated = (newFamilyId: string) => {
-    localStorage.setItem("familyId", newFamilyId);
-    setHasFamilyId(true);
-    refetch();
-  };
+  const handleFamilyCreated = useCallback(
+    (newFamilyId: string) => {
+      localStorage.setItem("familyId", newFamilyId);
+      setHasFamilyId(true);
+      refetch();
+    },
+    [refetch]
+  );
   const nodeTypes = useMemo(
     () => ({
       familyMember: (props: any) => (
@@ -96,48 +114,49 @@ const FamilyTree: React.FC = () => {
     }
 
     if (isSuccess && data?.data) {
-      const dataFormat = data.data.map((node: BaseFamilyMemberData) => {
-        const formattedNode = {
-          id: node.memberId,
-          type: "familyMember",
-          data: {
-            memberId: node.memberId,
-            familyId: node.familyId,
-            firstName: node.firstName,
-            middleName: node.middleName,
-            lastName: node.lastName,
-            dateOfBirth: node.dateOfBirth,
-            dateOfDeath: node.dateOfDeath,
-            placeOfBirth: node.placeOfBirth,
-            placeOfDeath: node.placeOfDeath,
-            isAlive: node.isAlive,
-            generation: node.generation,
-            shortSummary: node.shortSummary,
-            gender: node.gender,
-            spouse: {} as { wifeId?: string; husbandId?: string },
-            parent: node.parent
-              ? {
-                  fatherId: node.parent.fatherId,
-                  motherId: node.parent.motherId,
-                }
-              : null,
-            children: node.children,
-          },
-          position: { x: 0, y: 0 },
-        };
+      const dataFormat = data.data
+        .filter((node: BaseFamilyMemberData) => !node.isDeleted) // Lọc chỉ lấy những node chưa bị xóa
+        .map((node: BaseFamilyMemberData) => {
+          const formattedNode = {
+            id: node.memberId,
+            type: "familyMember",
+            data: {
+              memberId: node.memberId,
+              familyId: node.familyId,
+              firstName: node.firstName,
+              middleName: node.middleName,
+              lastName: node.lastName,
+              dateOfBirth: node.dateOfBirth,
+              dateOfDeath: node.dateOfDeath,
+              placeOfBirth: node.placeOfBirth,
+              placeOfDeath: node.placeOfDeath,
+              isAlive: node.isAlive,
+              generation: node.generation || 0,
+              shortSummary: node.shortSummary,
+              gender: node.gender,
+              spouse: {} as { wifeId?: string; husbandId?: string },
+              parent: node.parent
+                ? {
+                    fatherId: node.parent.fatherId,
+                    motherId: node.parent.motherId,
+                  }
+                : null,
+              children: node.children,
+            },
+            position: { x: 0, y: 0 },
+          };
 
-        if (node.spouse?.wifeId) {
-          formattedNode.data.spouse.wifeId = node.spouse.wifeId;
-        }
-        if (node.spouse?.husbandId) {
-          formattedNode.data.spouse.husbandId = node.spouse.husbandId;
-        }
+          if (node.spouse?.wifeId) {
+            formattedNode.data.spouse.wifeId = node.spouse.wifeId;
+          }
+          if (node.spouse?.husbandId) {
+            formattedNode.data.spouse.husbandId = node.spouse.husbandId;
+          }
 
-        return formattedNode;
-      });
+          return formattedNode;
+        });
 
       const formattedNodes = initialNodes(dataFormat);
-      console.log("formattedNodes", formattedNodes);
       const formattedEdges = createEdges(dataFormat).filter(
         (edge) => edge !== undefined
       );
@@ -146,6 +165,7 @@ const FamilyTree: React.FC = () => {
       setEdges(formattedEdges);
     }
   }, [data, isSuccess, familyId, setNodes, setEdges]);
+
   return (
     <ReactFlow
       nodes={nodes}

@@ -34,6 +34,7 @@ const getMemberIdFromToken = () => {
 
   try {
     const decoded: any = jwtDecode(token);
+    console.log(decoded);
     return decoded.memberId; // 🛠️ Trích xuất memberId từ payload
   } catch (error) {
     console.error("Lỗi khi giải mã token:", error);

@@ -101,7 +101,7 @@ export const CreateFamilyNode: React.FC<CreateFamilyNodeProps> = ({
             <Button
               onClick={handleCreateFamily}
               loading={isCreating}
-              color="green"
+              color="brown"
             >
               Tạo gia đình
             </Button>

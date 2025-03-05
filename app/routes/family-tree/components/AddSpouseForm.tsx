@@ -5,6 +5,7 @@ import {
   Group,
   Textarea,
   Switch,
+  Text,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { useForm, yupResolver } from "@mantine/form";
@@ -127,7 +128,16 @@ const AddSpouseForm: React.FC<AddSpouseFormProps> = ({
       ? `Thêm Vợ cho ${fullName}`
       : `Thêm Chồng cho ${fullName}`;
   return (
-    <Modal opened={opened} onClose={handleClose} title={modalTitle} size="lg">
+    <Modal
+      opened={opened}
+      onClose={handleClose}
+      title={
+        <Text size="xl" fw={700} c="brown">
+          Chỉnh sửa thông tin
+        </Text>
+      }
+      size="lg"
+    >
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
@@ -166,6 +176,7 @@ const AddSpouseForm: React.FC<AddSpouseFormProps> = ({
           <Switch
             label="Còn sống"
             checked={form.values.isAlive}
+            color="brown"
             onChange={(event) =>
               form.setFieldValue("isAlive", event.currentTarget.checked)
             }
@@ -196,10 +207,10 @@ const AddSpouseForm: React.FC<AddSpouseFormProps> = ({
           />
 
           <Group justify="flex-end" mt="md">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="default" onClick={onClose}>
               Hủy
             </Button>
-            <Button type="submit" color="blue">
+            <Button type="submit" color="brown">
               Thêm
             </Button>
           </Group>

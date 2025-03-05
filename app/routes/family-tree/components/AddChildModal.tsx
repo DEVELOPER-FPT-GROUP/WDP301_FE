@@ -5,6 +5,7 @@ import {
   Group,
   Textarea,
   Radio,
+  Text,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { useForm, yupResolver } from "@mantine/form";
@@ -105,7 +106,16 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
   };
 
   return (
-    <Modal opened={opened} onClose={handleClose} title="Thêm Con" size="lg">
+    <Modal
+      opened={opened}
+      onClose={handleClose}
+      title={
+        <Text size="xl" fw={700} c="brown">
+          Chỉnh sửa thông tin
+        </Text>
+      }
+      size="lg"
+    >
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
@@ -143,8 +153,8 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
 
           <Radio.Group label="Giới tính" {...form.getInputProps("gender")}>
             <Group mt="xs">
-              <Radio value="male" label="Nam" />
-              <Radio value="female" label="Nữ" />
+              <Radio value="male" label="Nam" color="brown" />
+              <Radio value="female" label="Nữ" color="brown" />
             </Group>
           </Radio.Group>
 
@@ -155,10 +165,10 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
           />
 
           <Group justify="flex-end" mt="md">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="default" onClick={onClose}>
               Hủy
             </Button>
-            <Button type="submit" color="blue">
+            <Button type="submit" color="brown">
               Thêm
             </Button>
           </Group>

@@ -4,7 +4,6 @@ import {
   TextInput,
   Button,
   Stack,
-  Title,
   SimpleGrid,
   Textarea,
   FileInput,
@@ -14,6 +13,7 @@ import {
   Group,
   LoadingOverlay,
   Center,
+  Text,
 } from "@mantine/core";
 import {
   usePostApi,
@@ -222,9 +222,9 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
       opened={opened}
       onClose={handleClose}
       title={
-        <Title order={2} c={"brown"}>
+        <Text size="xl" fw={700} c="brown">
           {data ? "Chỉnh sửa lịch sử" : "Thêm mới lịch sử"}
-        </Title>
+        </Text>
       }
       centered
       size="60%"
@@ -311,7 +311,11 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
               <Button variant="default" onClick={handleClose}>
                 Hủy
               </Button>
-              <Button color="brown" type="submit">
+              <Button
+                color="brown"
+                type="submit"
+                loading={createMutation.isPending || updateMutation.isPending}
+              >
                 Lưu
               </Button>
             </Group>

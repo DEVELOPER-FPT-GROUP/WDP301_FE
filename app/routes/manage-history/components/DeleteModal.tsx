@@ -35,7 +35,11 @@ const DeleteModal = ({ opened, onClose, data, refreshTable, title }: any) => {
         <Button variant="default" onClick={onClose}>
           Hủy
         </Button>
-        <Button color="red" onClick={handleDelete}>
+        <Button
+          color="red"
+          onClick={handleDelete}
+          loading={deleteMutation.isPending}
+        >
           Xóa
         </Button>
       </Group>

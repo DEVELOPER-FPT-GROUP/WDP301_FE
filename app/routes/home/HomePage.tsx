@@ -45,7 +45,7 @@ const HomePage = () => {
                 c="brown"
                 mb="xl"
                 style={{
-                  fontFamily: "'Pacifico', cursive",
+                  fontFamily: "'Lobster', cursive",
                   lineHeight: "1.3",
                 }}
               >

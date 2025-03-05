@@ -15,6 +15,7 @@ export type BaseFamilyMemberData = {
   generation: number;
   shortSummary?: string | null;
   gender: "male" | "female";
+  isDeleted?: boolean;
   spouse: {
     wifeId?: string;
     husbandId?: string;
