@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import FamilyTimeline from "./components/FamilyTimeline";
 import FamilyHistoryModal from "./components/FamilyHistoryModal";
+import { Constants } from "~/infrastructure/core/constants";
+import { jwtDecode } from "jwt-decode";
 
 interface FamilyStory {
   historicalRecordId?: string;
@@ -16,22 +18,35 @@ interface FamilyStory {
 }
 
 export const meta = () => [{ title: "Lịch sử dòng họ" }];
+const getMemberIdFromToken = () => {
+  const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
+  if (!token) return null;
+
+  try {
+    const decoded: any = jwtDecode(token);
+    return decoded.memberId; // 🛠️ Trích xuất memberId từ payload
+  } catch (error) {
+    console.error("Lỗi khi giải mã token:", error);
+    return null;
+  }
+};
 const FamilyHistory = () => {
   const [familyHistories, setFamilyHistories] = useState<FamilyStory[]>([]);
   const [selectedStory, setSelectedStory] = useState<FamilyStory | null>(null);
   const [viewModalOpened, setViewModalOpened] = useState(false);
   const [loadingModal, setLoadingModal] = useState(false);
-
+  const memberId = getMemberIdFromToken();
   const { data, isSuccess, isLoading } = useGetApi({
     queryKey: ["history"],
-    endpoint: "family-history/family/:id",
-    urlParams: { id: "67b48631521488258760621a" },
+    endpoint: "family-history/family/:id/search",
+    urlParams: { id: memberId },
+    queryParams: { limit: 1000, sortByStartDate: true },
   });
 
   useEffect(() => {
     if (isSuccess && data) {
-      setFamilyHistories(data.data);
+      setFamilyHistories(data.data.items);
     }
   }, [data, isSuccess]);
 
@@ -50,7 +65,7 @@ const FamilyHistory = () => {
   return (
     <Container p="xl">
       <Title order={1} size={30} fw={700} c="brown" ta="center" mb="md">
-        Lịch sử dòng họ
+        📖👨‍👩‍👧‍👦 Lịch sử dòng họ 👨‍👩‍👧‍👦📖
       </Title>
 
       {isLoading ? (
