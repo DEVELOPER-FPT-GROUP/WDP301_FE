@@ -625,7 +625,11 @@ export default function EventPage() {
       </Stack>
       <Modal
         opened={opened}
-        title={<Title order={2}>Tạo sự kiện mới</Title>}
+        title={
+          <Text size="xl" fw={700} c="brown">
+            Tạo sự kiện mới
+          </Text>
+        }
         centered
         size="70%"
         onClose={() => setOpened(false)}

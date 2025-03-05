@@ -33,7 +33,6 @@ function formatDate(isoDate: string) {
   return `${day}/${month}/${year}`;
 }
 import DeleteMemberModal from "~/infrastructure/common/components/component/DeleteMemberModal";
-import { set } from "zod";
 
 type FamilyMemberNodeProps = NodeProps<FamilyMemberNodeType> & {
   refetch: (
@@ -167,9 +166,30 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
       >
         {data.generation === 0 ? (
           <>
+            {Object.keys(data.spouse).length === 0 && (
+              <Handle
+                type="source"
+                position={Position.Right}
+                style={{
+                  width: "25px",
+                  height: "25px",
+                  cursor: "pointer",
+                  backgroundColor: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <IconCirclePlus
+                  size={25}
+                  onClick={() => setOpenModalSpouse(true)}
+                  className="icon-plus-hover"
+                  color="black"
+                />
+              </Handle>
+            )}
             {data.spouse.wifeId && (
               <>
-                <Handle type="source" position={Position.Bottom} />
                 <Handle
                   type="source"
                   position={Position.Bottom}

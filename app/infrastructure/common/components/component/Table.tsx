@@ -69,12 +69,12 @@ export function TableComponent<T extends { id: string }>({
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {data?.data.length > 0 ? (
-              data.data.map((row: T) => (
+            {data?.data?.items.length > 0 ? (
+              data.data.items.map((row: T) => (
                 <Table.Tr key={row.id}>
                   {columns.map((col) => (
                     <Table.Td key={col.key as string}>
-                      {String(row[col.key])}
+                      {String(row[col.key] || "")}
                     </Table.Td>
                   ))}
                   <Table.Td>

@@ -6,6 +6,8 @@ import {
   ScrollRestoration,
   isRouteErrorResponse,
   useLoaderData,
+  useLocation,
+  useNavigate,
 } from "react-router";
 import "@mantine/core/styles.css";
 import "@xyflow/react/dist/style.css";
@@ -22,6 +24,8 @@ import {
   NotFound,
 } from "./infrastructure/common/components/error-screen";
 import { Notifications } from "@mantine/notifications";
+import { useEffect } from "react";
+import { AppRoutes } from "./infrastructure/core/AppRoutes";
 
 const queryClient = new QueryClient();
 export const links: Route.LinksFunction = () => [
@@ -34,6 +38,10 @@ export const links: Route.LinksFunction = () => [
   {
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+  },
+  {
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lobster&display=swap",
   },
 ];
 
@@ -99,6 +107,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const { isLoggedIn } = useLoaderData<typeof clientLoader>();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
+
+    // Redirect only if the user is not already on the correct page
+    if (token && location.pathname === AppRoutes.PUBLIC.AUTH.LOGIN) {
+      navigate(AppRoutes.ROOT, { replace: true });
+    } else if (
+      !token &&
+      location.pathname !== AppRoutes.PUBLIC.AUTH.LOGIN &&
+      location.pathname !== AppRoutes.PUBLIC.GUEST.HOME &&
+      location.pathname !== AppRoutes.PUBLIC.AUTH.SIGN_UP
+    ) {
+      navigate(AppRoutes.PUBLIC.AUTH.LOGIN, { replace: true });
+    } else if (!token && location.pathname === AppRoutes.PUBLIC.GUEST.HOME) {
+      navigate(AppRoutes.PUBLIC.GUEST.HOME, { replace: true });
+    }
+  }, [isLoggedIn, location.pathname, navigate]);
 
   return (
     <>

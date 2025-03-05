@@ -19,6 +19,8 @@ import "./styles.css";
 import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import { FamilyMemberNode } from "./components/FamilyMemberNode";
 import { CreateFamilyNode } from "./components/CreateFamilyNode";
+import { Constants } from "~/infrastructure/core/constants";
+import { jwtDecode } from "jwt-decode";
 
 export const meta = () => {
   return [{ title: "Cây Gia Đình" }];
@@ -38,12 +40,25 @@ const FamilyTree: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<NodeTypes>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [isInteractive, setIsInteractive] = useState(true);
+  const getFamilyIdFromToken = () => {
+    const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
+    if (!token) return null;
+
+    try {
+      const decoded: any = jwtDecode(token);
+      console.log(decoded);
+      return decoded.familyId; // 🛠️ Trích xuất memberId từ payload
+    } catch (error) {
+      console.error("Lỗi khi giải mã token:", error);
+      return null;
+    }
+  };
   // Lấy familyId từ localStorage
   // const familyId = localStorage.getItem("familyId") || "";
-  const familyId =
-    localStorage.getItem("familyId") || "67b09900dc5227c02b91d823";
-
+  // const familyId =
+  //   localStorage.getItem("familyId") || "67b09900dc5227c02b91d823";
+  const familyId = getFamilyIdFromToken();
   // State để kiểm tra xem có familyId hợp lệ không
   const [hasFamilyId, setHasFamilyId] = useState(!!familyId);
 
@@ -116,7 +131,7 @@ const FamilyTree: React.FC = () => {
               placeOfBirth: node.placeOfBirth,
               placeOfDeath: node.placeOfDeath,
               isAlive: node.isAlive,
-              generation: node.generation,
+              generation: node.generation || 0,
               shortSummary: node.shortSummary,
               gender: node.gender,
               spouse: {} as { wifeId?: string; husbandId?: string },

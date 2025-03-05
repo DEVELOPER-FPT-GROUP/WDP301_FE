@@ -13,8 +13,8 @@ import FormModal from "./components/FormModal";
 import DeleteModal from "./components/DeleteModal";
 import { Constants } from "~/infrastructure/core/constants";
 import { jwtDecode } from "jwt-decode";
-export const meta = () => [{ title: "Lịch sử dòng họ" }];
 
+export const meta = () => [{ title: "Ngày giỗ các cụ" }];
 const getMemberIdFromToken = () => {
   const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
@@ -52,8 +52,10 @@ const route = () => {
   const refreshTable = () => setRefreshKey((prev) => prev + 1);
 
   const columns = [
-    { key: "historicalRecordTitle", label: "Tiêu đề" },
-    { key: "historicalRecordSummary", label: "Tóm tắt" },
+    { key: "firstName", label: "Họ và tên" },
+    { key: "dateOfDeath", label: "Ngày giỗ" },
+    { key: "placeOfDeath", label: "An táng" },
+    { key: "worship", label: "Thờ cúng tại" },
   ];
 
   return (
@@ -61,9 +63,9 @@ const route = () => {
       <Stack>
         <Group justify="space-between" align="center" mb="md">
           <Title order={2} c="brown">
-            Quản lý lịch sử dòng họ
+            Quản lý ngày giỗ các cụ
           </Title>
-          <Tooltip label="Thêm lịch sử" position="bottom">
+          {/* <Tooltip label="Thêm lịch sử" position="bottom">
             <ActionIcon
               color="brown"
               size="lg"
@@ -73,13 +75,13 @@ const route = () => {
             >
               <IconPlus size={20} />
             </ActionIcon>
-          </Tooltip>
+          </Tooltip> */}
         </Group>
       </Stack>
       <TableComponent
         key={refreshKey}
         columns={columns}
-        endpoint={`family-history/family/${memberId}/search?sortByStartDate=false`}
+        endpoint={`members/family/${memberId}/search?isAlive=false`}
         onEdit={handleEdit}
         onDelete={handleDelete}
       />

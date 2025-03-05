@@ -38,9 +38,9 @@ const FamilyHistoryModal = ({ story, opened, onClose, loading }: Props) => {
       opened={opened}
       onClose={onClose}
       title={
-        <Title order={2} c="brown">
+        <Text size="xl" fw={700} c="brown">
           📖 Chi tiết lịch sử
-        </Title>
+        </Text>
       }
       centered
       size="60%"

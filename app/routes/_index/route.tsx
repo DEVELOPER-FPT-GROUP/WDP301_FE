@@ -12,6 +12,8 @@ export function meta() {
 export default function IndexPage() {
   const authWrapper = () => {
     const accessToken = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
+    console.log("check");
+
     if (accessToken) {
       return <Navigate to={AppRoutes.PRIVATE.FAMILY_TREE} replace={true} />;
     } else {

@@ -1,24 +1,42 @@
 import { Modal, Button, Group, Text } from "@mantine/core";
-import { useDeleteApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
+import {
+  useDeleteApi,
+  usePutApi,
+} from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import {
   notifyError,
   notifySuccess,
 } from "~/infrastructure/utils/notification/notification";
 
 const DeleteModal = ({ opened, onClose, data, refreshTable, title }: any) => {
-  const deleteMutation = useDeleteApi({
-    endpoint: data ? `family-history/${data.historicalRecordId}` : "",
-    options: { onSuccess: refreshTable },
+  const putMutation = usePutApi({
+    endpoint: `members/${data?.memberId}`,
+    options: {
+      onSuccess: () => {
+        notifySuccess({
+          title: "Thành công",
+          message: "Ngày giỗ đã được xóa",
+        });
+        refreshTable();
+        onClose();
+      },
+      onError: () => {
+        notifyError({
+          title: "Thất bại",
+          message: "Có lỗi xảy ra khi lưu ngày giỗ dòng họ.",
+        });
+      },
+    },
   });
 
   const handleDelete = () => {
-    deleteMutation.mutate(undefined, {
-      onSuccess: () => {
-        notifySuccess({ title: "Thành công", message: `${title} đã bị xóa!` });
-        onClose();
-      },
-      onError: () => notifyError({ title: "Lỗi", message: "Xóa thất bại!" }),
-    });
+    const payload = {
+      isAlive: true,
+      dateOfDeath: null,
+      placeOfDeath: "",
+      worship: "",
+    };
+    putMutation.mutate(payload);
   };
 
   return (
@@ -35,11 +53,7 @@ const DeleteModal = ({ opened, onClose, data, refreshTable, title }: any) => {
         <Button variant="default" onClick={onClose}>
           Hủy
         </Button>
-        <Button
-          color="red"
-          onClick={handleDelete}
-          loading={deleteMutation.isPending}
-        >
+        <Button color="red" onClick={handleDelete}>
           Xóa
         </Button>
       </Group>
