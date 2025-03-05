@@ -22,7 +22,6 @@ import {
   NotFound,
 } from "./infrastructure/common/components/error-screen";
 import { Notifications } from "@mantine/notifications";
-import { Notifications } from "@mantine/notifications";
 
 const queryClient = new QueryClient();
 export const links: Route.LinksFunction = () => [

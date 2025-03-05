@@ -5,7 +5,7 @@ import {
   IconCirclePlus,
   IconDotsVertical,
   IconEditCircle,
-  IconHandMove,
+  IconEyeSpark,
   IconTrashFilled,
 } from "@tabler/icons-react";
 import { Menu, MenuItem } from "@mantine/core";
@@ -21,17 +21,19 @@ import {
   notifyError,
   notifySuccess,
 } from "~/infrastructure/utils/notification/notification";
+import EditDetailMemberModal from "~/infrastructure/common/components/component/EditDetailMemberModal";
+import { useNavigate } from "react-router";
 function formatDate(isoDate: string) {
   const date = new Date(isoDate);
-
   // Get day, month, year
   const day = date.getDate().toString().padStart(2, "0");
   const month = (date.getMonth() + 1).toString().padStart(2, "0");
   const year = date.getFullYear();
-
   // Return formatted date
   return `${day}/${month}/${year}`;
 }
+import DeleteMemberModal from "~/infrastructure/common/components/component/DeleteMemberModal";
+import { set } from "zod";
 
 type FamilyMemberNodeProps = NodeProps<FamilyMemberNodeType> & {
   refetch: (
@@ -43,6 +45,20 @@ interface ChildFormDataWithBirthOrder extends ChildFormData {
 }
 export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
   ({ data, refetch }) => {
+    // State to handle pop-up visibility
+    const [openModalSpouse, setOpenModalSpouse] = useState(false);
+    const [openModalChild, setOpenModalChild] = useState(false);
+    const [editmodalOpened, setEditModalOpened] = useState(false);
+    const [deleteMemberModalOpened, setDeleteMemberModalOpened] =
+      useState(false);
+    const [editData, setEditData] = useState<any>(null);
+    const navigate = useNavigate();
+    const addSpouseApi = usePostApi<SpouseFormData, any>({
+      endpoint: "members/add-spouse",
+    });
+    const addChildApi = usePostApi<ChildFormDataWithBirthOrder, any>({
+      endpoint: "members/add-child",
+    });
     const imageUrl =
       data.gender === "male"
         ? "/app/assets/image/male.png"
@@ -62,16 +78,6 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
           return `Thế hệ thứ ${generation + 1}`;
       }
     };
-
-    const addSpouseApi = usePostApi<SpouseFormData, any>({
-      endpoint: "members/add-spouse",
-    });
-    const addChildApi = usePostApi<ChildFormDataWithBirthOrder, any>({
-      endpoint: "members/add-child",
-    });
-    // State to handle pop-up visibility
-    const [openModalSpouse, setOpenModalSpouse] = useState(false);
-    const [openModalChild, setOpenModalChild] = useState(false);
     const openPopupChild = () => {
       setOpenModalChild(true);
     };
@@ -151,7 +157,7 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
     const name = data.firstName + " " + data.middleName + " " + data.lastName;
     return (
       <div
-        className={`p-4 w-[200px] h-[200px] ${
+        className={`p-3 w-[200px] h-[200px] ${
           data.isAlive ? " bg-white " : "bg-gray-200"
         } border-2 rounded-lg shadow-lg transition-all duration-300 ${
           data.gender === "male"
@@ -263,36 +269,33 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
 
             <Menu.Dropdown>
               <MenuItem
+                leftSection={<IconEyeSpark size={16} />}
+                onClick={() =>
+                  navigate("/detail-member", {
+                    state: {
+                      memberId: data.memberId,
+                    },
+                  })
+                }
+              >
+                View
+              </MenuItem>
+              <MenuItem
                 leftSection={<IconEditCircle size={16} />}
                 onClick={() => {
-                  alert("Edit");
+                  setEditModalOpened(true);
+                  setEditData(data);
                 }}
               >
                 Edit
               </MenuItem>
               <MenuItem
-                leftSection={
-                  <IconTrashFilled
-                    size={16}
-                    onClick={() => {
-                      alert("Delete");
-                    }}
-                  />
-                }
+                leftSection={<IconTrashFilled size={16} />}
+                onClick={() => {
+                  setDeleteMemberModalOpened(true);
+                }}
               >
                 Delete
-              </MenuItem>
-              <MenuItem
-                leftSection={
-                  <IconHandMove
-                    size={16}
-                    onClick={() => {
-                      alert("Move");
-                    }}
-                  />
-                }
-              >
-                Move
               </MenuItem>
             </Menu.Dropdown>
           </Menu>
@@ -315,11 +318,33 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
             <p className="text-sm font-medium text-blue-600">
               {getGenerationLabel(data.generation)}
             </p>
+
+            {data.dateOfDeath && (
+              <p className="text-xs text-gray-500">
+                Ngày sinh: {formatDate(data.dateOfDeath)}
+              </p>
+            )}
             <div className="flex items-center gap-2 justify-center text-sm text-gray-600">
               {!data.isAlive && <span className="text-red-600">Đã chết</span>}
             </div>
           </div>
         </div>
+        {editData && (
+          <EditDetailMemberModal
+            opened={editmodalOpened}
+            onClose={() => setEditModalOpened(false)}
+            memberData={editData}
+            refreshTable={refetch}
+          />
+        )}
+
+        <DeleteMemberModal
+          opened={deleteMemberModalOpened}
+          onClose={() => setDeleteMemberModalOpened(false)}
+          memberData={data}
+          refreshTable={refetch}
+        />
+
         <AddChildModal
           opened={openModalChild}
           onClose={() => setOpenModalChild(false)}

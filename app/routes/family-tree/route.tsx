@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -54,11 +54,14 @@ const FamilyTree: React.FC = () => {
     // Không sử dụng thuộc tính enabled vì hook không hỗ trợ
   });
 
-  const handleFamilyCreated = (newFamilyId: string) => {
-    localStorage.setItem("familyId", newFamilyId);
-    setHasFamilyId(true);
-    refetch();
-  };
+  const handleFamilyCreated = useCallback(
+    (newFamilyId: string) => {
+      localStorage.setItem("familyId", newFamilyId);
+      setHasFamilyId(true);
+      refetch();
+    },
+    [refetch]
+  );
   const nodeTypes = useMemo(
     () => ({
       familyMember: (props: any) => (
@@ -96,48 +99,49 @@ const FamilyTree: React.FC = () => {
     }
 
     if (isSuccess && data?.data) {
-      const dataFormat = data.data.map((node: BaseFamilyMemberData) => {
-        const formattedNode = {
-          id: node.memberId,
-          type: "familyMember",
-          data: {
-            memberId: node.memberId,
-            familyId: node.familyId,
-            firstName: node.firstName,
-            middleName: node.middleName,
-            lastName: node.lastName,
-            dateOfBirth: node.dateOfBirth,
-            dateOfDeath: node.dateOfDeath,
-            placeOfBirth: node.placeOfBirth,
-            placeOfDeath: node.placeOfDeath,
-            isAlive: node.isAlive,
-            generation: node.generation,
-            shortSummary: node.shortSummary,
-            gender: node.gender,
-            spouse: {} as { wifeId?: string; husbandId?: string },
-            parent: node.parent
-              ? {
-                  fatherId: node.parent.fatherId,
-                  motherId: node.parent.motherId,
-                }
-              : null,
-            children: node.children,
-          },
-          position: { x: 0, y: 0 },
-        };
+      const dataFormat = data.data
+        .filter((node: BaseFamilyMemberData) => !node.isDeleted) // Lọc chỉ lấy những node chưa bị xóa
+        .map((node: BaseFamilyMemberData) => {
+          const formattedNode = {
+            id: node.memberId,
+            type: "familyMember",
+            data: {
+              memberId: node.memberId,
+              familyId: node.familyId,
+              firstName: node.firstName,
+              middleName: node.middleName,
+              lastName: node.lastName,
+              dateOfBirth: node.dateOfBirth,
+              dateOfDeath: node.dateOfDeath,
+              placeOfBirth: node.placeOfBirth,
+              placeOfDeath: node.placeOfDeath,
+              isAlive: node.isAlive,
+              generation: node.generation,
+              shortSummary: node.shortSummary,
+              gender: node.gender,
+              spouse: {} as { wifeId?: string; husbandId?: string },
+              parent: node.parent
+                ? {
+                    fatherId: node.parent.fatherId,
+                    motherId: node.parent.motherId,
+                  }
+                : null,
+              children: node.children,
+            },
+            position: { x: 0, y: 0 },
+          };
 
-        if (node.spouse?.wifeId) {
-          formattedNode.data.spouse.wifeId = node.spouse.wifeId;
-        }
-        if (node.spouse?.husbandId) {
-          formattedNode.data.spouse.husbandId = node.spouse.husbandId;
-        }
+          if (node.spouse?.wifeId) {
+            formattedNode.data.spouse.wifeId = node.spouse.wifeId;
+          }
+          if (node.spouse?.husbandId) {
+            formattedNode.data.spouse.husbandId = node.spouse.husbandId;
+          }
 
-        return formattedNode;
-      });
+          return formattedNode;
+        });
 
       const formattedNodes = initialNodes(dataFormat);
-      console.log("formattedNodes", formattedNodes);
       const formattedEdges = createEdges(dataFormat).filter(
         (edge) => edge !== undefined
       );
@@ -146,6 +150,7 @@ const FamilyTree: React.FC = () => {
       setEdges(formattedEdges);
     }
   }, [data, isSuccess, familyId, setNodes, setEdges]);
+
   return (
     <ReactFlow
       nodes={nodes}
