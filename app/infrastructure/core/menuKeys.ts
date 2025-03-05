@@ -1,8 +1,8 @@
-import { IconHome2, IconCalendarWeek, IconHierarchy, IconLabel, IconLabelImportant, IconUser, IconUserFilled } from "@tabler/icons-react";
+import { IconHome2, IconCalendarWeek, IconHierarchy, IconLabel, IconLabelImportant, IconUser, IconUserFilled, IconGrave2 } from "@tabler/icons-react";
 import type { MenuItem } from "../common/components/layout/menuItems";
 import { AppRoutes } from "./AppRoutes";
 
-export const menuKeys: MenuItem[] = [
+export const userMenuKeys: MenuItem[] = [
 	{
 		label: "Cây gia phả",
 		leftIcon: IconHome2,
@@ -23,26 +23,46 @@ export const menuKeys: MenuItem[] = [
 		leftIcon: IconLabelImportant,
 		path: AppRoutes.PRIVATE.FAMILY_DEATH_ANNIVESARY,
 	},
+	// {
+	// 	label: "Quản lý lịch sử",
+	// 	leftIcon: IconHierarchy,
+	// 	path: AppRoutes.PRIVATE.MANAGE_FAMILY_HISTORY,
+	// },
+	// {
+	// 	label: "Quản lý ngày giỗ",
+	// 	leftIcon: IconGrave2,
+	// 	path: AppRoutes.PRIVATE.MANAGE_FAMILY_DEATH,
+	// },
+];
+export const adminMenuKeys: MenuItem[] = [
+	{
+		label: "Cây gia phả",
+		leftIcon: IconHome2,
+		path: AppRoutes.PRIVATE.FAMILY_TREE,
+	},
+	// {
+	// 	label: "Sự kiện",
+	// 	leftIcon: IconCalendarWeek,
+	// 	path: AppRoutes.PRIVATE.FAMILY_EVENT,
+	// },
+	// {
+	// 	label: "Lịch sử dòng họ",
+	// 	leftIcon: IconHierarchy,
+	// 	path: AppRoutes.PRIVATE.FAMILY_HISTORY,
+	// },
+	// {
+	// 	label: "Ngày giỗ",
+	// 	leftIcon: IconLabelImportant,
+	// 	path: AppRoutes.PRIVATE.FAMILY_DEATH_ANNIVESARY,
+	// },
 	{
 		label: "Quản lý lịch sử",
 		leftIcon: IconHierarchy,
 		path: AppRoutes.PRIVATE.MANAGE_FAMILY_HISTORY,
 	},
-	// {
-	// 	label: "Test",
-	// 	leftIcon: IconLabelImportant,
-	// 	path: '/test',
-	// },
-	// {
-	// 	label: "Account",
-	// 	leftIcon: IconUser,
-	// 	path: AppRoutes.PRIVATE.ACCOUNT,
-	// 	children: [
-	// 		{
-	// 			label: "Profile",
-	// 			leftIcon: IconUserFilled,
-	// 			path: AppRoutes.PRIVATE.Profile,
-	// 		},
-	// 	],
-	// },
+	{
+		label: "Quản lý ngày giỗ",
+		leftIcon: IconGrave2,
+		path: AppRoutes.PRIVATE.MANAGE_FAMILY_DEATH,
+	},
 ];

@@ -13,7 +13,6 @@ import {
   Card,
   Group,
   LoadingOverlay,
-  Transition,
   Center,
 } from "@mantine/core";
 import {
@@ -28,7 +27,21 @@ import { DateInput } from "@mantine/dates";
 import { IconX } from "@tabler/icons-react";
 import * as yup from "yup";
 import { useForm } from "@mantine/form";
+import { Constants } from "~/infrastructure/core/constants";
+import { jwtDecode } from "jwt-decode";
+const getMemberIdFromToken = () => {
+  const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
+  if (!token) return null;
+
+  try {
+    const decoded: any = jwtDecode(token);
+    return decoded.memberId;
+  } catch (error) {
+    console.error("Lỗi khi giải mã token:", error);
+    return null;
+  }
+};
 const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
   const [loading, setLoading] = useState(false);
   const [isFetchingData, setIsFetchingData] = useState(false);
@@ -51,7 +64,7 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
 
     setUploadedFiles((prev: File[]) => [...prev, ...files]);
   };
-
+  const memberId = getMemberIdFromToken();
   const handleRemoveImage = (image: any) => {
     if (image.isNew) {
       console.log(image);
@@ -90,7 +103,7 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
 
   const form = useForm({
     initialValues: {
-      familyId: "67b48631521488258760621a",
+      familyId: memberId,
       historicalRecordTitle: "",
       historicalRecordSummary: "",
       historicalRecordDetails: "",
@@ -151,7 +164,7 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
     const formData = new FormData();
 
     if (!data) {
-      formData.append("familyId", "67b48631521488258760621a");
+      formData.append("familyId", memberId);
     }
     formData.append("historicalRecordTitle", values.historicalRecordTitle);
     formData.append("historicalRecordSummary", values.historicalRecordSummary);
@@ -196,10 +209,18 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
     });
   };
 
+  const handleClose = () => {
+    form.reset();
+    setPreviewImages([]);
+    setDeletedImageIds([]);
+    setUploadedFiles([]);
+    onClose();
+  };
+
   return (
     <Modal
       opened={opened}
-      onClose={onClose}
+      onClose={handleClose}
       title={
         <Title order={2} c={"brown"}>
           {data ? "Chỉnh sửa lịch sử" : "Thêm mới lịch sử"}
@@ -207,6 +228,7 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
       }
       centered
       size="60%"
+      closeOnClickOutside={false}
     >
       <LoadingOverlay
         visible={loading}
@@ -286,10 +308,10 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
               </SimpleGrid>
             )}
             <Group justify="flex-end">
-              <Button variant="default" onClick={onClose}>
+              <Button variant="default" onClick={handleClose}>
                 Hủy
               </Button>
-              <Button color="brown" onClick={handleSubmit} type="submit">
+              <Button color="brown" type="submit">
                 Lưu
               </Button>
             </Group>
