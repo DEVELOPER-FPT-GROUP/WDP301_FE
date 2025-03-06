@@ -49,8 +49,8 @@ export interface ChildFormData {
 interface AddChildModalProps {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (values: ChildFormData & { memberId: string }) => void;
-  memberId: string; // ID của cha/mẹ
+  onSubmit: (values: ChildFormData & { parentId: string }) => void;
+  parentId: string; // ID của cha/mẹ
 }
 
 // Hàm định dạng ngày tháng
@@ -70,7 +70,7 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
   opened,
   onClose,
   onSubmit,
-  memberId,
+  parentId,
 }) => {
   const form = useForm({
     initialValues: {
@@ -78,10 +78,12 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
       middleName: "",
       lastName: "",
       dateOfBirth: null,
-      gender: "male", // Mặc định là "male"
+      // Mặc định là "male"
       placeOfBirth: "",
+
+      isAlive: true,
       shortSummary: "",
-      isAlive: true, // Mặc định là true
+      gender: "male", // Mặc định là true
     },
     validate: yupResolver(childSchema),
   });
@@ -93,7 +95,7 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
       dateOfBirth: formatDateToISOString(
         values.dateOfBirth ? new Date(values.dateOfBirth) : null
       ),
-      memberId, // Truyền ID của cha/mẹ
+      parentId, // Truyền ID của cha/mẹ
     };
     onSubmit(formattedValues);
     form.reset();

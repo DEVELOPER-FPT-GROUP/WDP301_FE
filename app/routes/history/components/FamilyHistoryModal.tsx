@@ -82,15 +82,18 @@ const FamilyHistoryModal = ({ story, opened, onClose, loading }: Props) => {
                   🖼 Hình ảnh:
                 </Text>
                 <SimpleGrid cols={3} spacing="md">
-                  {story.base64Images.map((img, index) => (
-                    <Image
-                      key={index}
-                      src={img.url}
-                      alt={`Ảnh ${index + 1}`}
-                      radius="md"
-                      style={{ objectFit: "cover", width: "100%" }}
-                    />
-                  ))}
+                  {story.base64Images.map((img, index) => {
+                    console.log(img);
+                    return (
+                      <Image
+                        key={index}
+                        src={img.url}
+                        alt={`Ảnh ${index + 1}`}
+                        radius="md"
+                        style={{ objectFit: "cover", width: "100%" }}
+                      />
+                    );
+                  })}
                 </SimpleGrid>
               </>
             )}

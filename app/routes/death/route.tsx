@@ -35,7 +35,7 @@ const getMemberIdFromToken = () => {
   try {
     const decoded: any = jwtDecode(token);
     console.log(decoded);
-    return decoded.memberId; // 🛠️ Trích xuất memberId từ payload
+    return decoded.familyId; // 🛠️ Trích xuất memberId từ payload
   } catch (error) {
     console.error("Lỗi khi giải mã token:", error);
     return null;
@@ -46,6 +46,7 @@ const MemorialSchedule = () => {
   const [search, setSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState(""); // Lưu giá trị để gọi API
   const memberId = getMemberIdFromToken();
+
   const { data, isLoading, refetch } = useGetApi({
     endpoint: `members/family/${memberId}/search`,
     queryKey: ["members", searchQuery],
@@ -56,7 +57,7 @@ const MemorialSchedule = () => {
       search: searchQuery,
     },
   });
-
+  console.log("test: ", data);
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "Enter") {
       setSearchQuery(search);

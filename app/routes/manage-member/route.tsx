@@ -4,6 +4,8 @@ import { AppShell, Group, Stack, Title } from "@mantine/core";
 import DeleteMemberModal from "../../infrastructure/common/components/component/DeleteMemberModal";
 import EditDetailMemberModal from "../../infrastructure/common/components/component/EditDetailMemberModal";
 import RestoreMemberModal from "./components/RestoreMemberDeleted";
+import { Constants } from "~/infrastructure/core/constants";
+import { jwtDecode } from "jwt-decode";
 export const meta = () => [{ title: "Quản lý thành viên " }];
 const route = () => {
   const [selectedData, setSelectedData] = useState<any>(null);
@@ -28,8 +30,22 @@ const route = () => {
     setRestoreMemberModalOpened(true);
   };
 
-  const refreshTable = () => setRefreshKey((prev) => prev + 1);
+  const getFamilyIdFromToken = () => {
+    const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
+    if (!token) return null;
+
+    try {
+      const decoded: any = jwtDecode(token);
+      console.log(decoded);
+      return decoded.familyId; // 🛠️ Trích xuất memberId từ payload
+    } catch (error) {
+      console.error("Lỗi khi giải mã token:", error);
+      return null;
+    }
+  };
+  const refreshTable = () => setRefreshKey((prev) => prev + 1);
+  const familyId = getFamilyIdFromToken();
   const columns = [
     { key: "firstName", label: "Họ " },
     { key: "middleName", label: "Tên đệm" },
@@ -48,7 +64,7 @@ const route = () => {
       <TableComponent
         key={refreshKey}
         columns={columns}
-        endpoint="members/get-members-in-family/67b09900dc5227c02b91d823"
+        endpoint={`members/get-members-in-family/${familyId}`}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onRestore={handleRestore}

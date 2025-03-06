@@ -369,7 +369,7 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
           opened={openModalChild}
           onClose={() => setOpenModalChild(false)}
           onSubmit={handleAddChild}
-          memberId={data.memberId} // ID của cha/mẹ
+          parentId={data.memberId} // ID của cha/mẹ
         />
         <AddSpouseForm
           opened={openModalSpouse}
