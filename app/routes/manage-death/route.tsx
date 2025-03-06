@@ -22,7 +22,7 @@ const getMemberIdFromToken = () => {
 
   try {
     const decoded: any = jwtDecode(token);
-    return decoded.memberId;
+    return decoded.familyId;
   } catch (error) {
     console.error("Lỗi khi giải mã token:", error);
     return null;
