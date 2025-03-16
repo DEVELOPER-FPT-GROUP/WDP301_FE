@@ -156,7 +156,7 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
     const name = data.firstName + " " + data.middleName + " " + data.lastName;
     return (
       <div
-        className={`p-3 w-[200px] h-[200px] ${
+        className={`p-3 w-[200px] h-[220px] ${
           data.isAlive ? " bg-white " : "bg-gray-200"
         } border-2 rounded-lg shadow-lg transition-all duration-300 ${
           data.gender === "male"
@@ -345,7 +345,7 @@ export const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = memo(
               </p>
             )}
             <div className="flex items-center gap-2 justify-center text-sm text-gray-600">
-              {!data.isAlive && <span className="text-red-600">Đã chết</span>}
+              {!data.isAlive && <span className="text-red-600">Đã mất</span>}
             </div>
           </div>
         </div>

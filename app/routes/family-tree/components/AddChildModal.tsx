@@ -80,7 +80,6 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
       dateOfBirth: null,
       // Mặc định là "male"
       placeOfBirth: "",
-
       isAlive: true,
       shortSummary: "",
       gender: "male", // Mặc định là true

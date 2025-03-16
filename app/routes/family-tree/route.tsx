@@ -1,9 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   type Edge,
@@ -18,10 +17,9 @@ import { initialNodes } from "./react-flow-base/nodes";
 import "./styles.css";
 import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import { FamilyMemberNode } from "./components/FamilyMemberNode";
-import { CreateFamilyNode } from "./components/CreateFamilyNode";
 import { Constants } from "~/infrastructure/core/constants";
 import { jwtDecode } from "jwt-decode";
-
+import DownloadButton from "./components/DownloadButton";
 export const meta = () => {
   return [{ title: "Cây Gia Đình" }];
 };
@@ -47,7 +45,7 @@ const FamilyTree: React.FC = () => {
 
     try {
       const decoded: any = jwtDecode(token);
-      console.log(decoded);
+      // console.log(decoded);
       return decoded.familyId; // 🛠️ Trích xuất memberId từ payload
     } catch (error) {
       console.error("Lỗi khi giải mã token:", error);
@@ -55,12 +53,8 @@ const FamilyTree: React.FC = () => {
     }
   };
   // Lấy familyId từ localStorage
-  // const familyId = localStorage.getItem("familyId") || "";
-  // const familyId =
-  //   localStorage.getItem("familyId") || "67b09900dc5227c02b91d823";
   const familyId = getFamilyIdFromToken();
   // State để kiểm tra xem có familyId hợp lệ không
-  const [hasFamilyId, setHasFamilyId] = useState(!!familyId);
 
   const { data, isSuccess, refetch } = useGetApi({
     queryKey: ["family-tree", familyId],
@@ -69,42 +63,14 @@ const FamilyTree: React.FC = () => {
     // Không sử dụng thuộc tính enabled vì hook không hỗ trợ
   });
 
-  const handleFamilyCreated = useCallback(
-    (newFamilyId: string) => {
-      localStorage.setItem("familyId", newFamilyId);
-      setHasFamilyId(true);
-      refetch();
-    },
-    [refetch]
-  );
   const nodeTypes = useMemo(
     () => ({
       familyMember: (props: any) => (
         <FamilyMemberNode {...props} refetch={refetch} />
       ),
-      createFamily: (props: any) => (
-        <CreateFamilyNode {...props} onFamilyCreated={handleFamilyCreated} />
-      ),
     }),
-    [refetch, handleFamilyCreated]
+    [refetch]
   );
-
-  // Khởi tạo nút "Tạo cây gia đình" nếu không có familyId
-  useEffect(() => {
-    if (!hasFamilyId) {
-      setNodes([
-        {
-          id: "create-family-node",
-          type: "createFamily",
-          data: {
-            label: "Tạo cây gia đình mới",
-          },
-          position: { x: 0, y: 0 },
-        } as Node<CreateFamilyNodeData>,
-      ]);
-      setEdges([]);
-    }
-  }, [hasFamilyId, setNodes, setEdges]);
 
   // Chỉ gọi API khi có familyId
   useEffect(() => {
@@ -173,22 +139,17 @@ const FamilyTree: React.FC = () => {
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       nodeTypes={nodeTypes}
-      // Cho phép tương tác với node createFamily ngay cả khi isInteractive = true
-      elementsSelectable={
-        nodes.some((n) => n.type === "createFamily") ? true : !isInteractive
-      }
+      elementsSelectable={!isInteractive}
       nodesDraggable={!isInteractive}
       nodesConnectable={!isInteractive}
       zoomOnDoubleClick={false}
       fitView
     >
-      {hasFamilyId && (
-        <>
-          <Background />
-          <Controls showInteractive={isInteractive} />
-          <MiniMap />
-        </>
-      )}
+      <>
+        <Background />
+        <Controls showInteractive={isInteractive} />
+        <DownloadButton />
+      </>
     </ReactFlow>
   );
 };
