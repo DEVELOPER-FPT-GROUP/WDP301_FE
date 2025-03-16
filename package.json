@@ -30,13 +30,11 @@
     "@react-router/serve": "^7.1.5",
     "@tabler/icons-react": "^3.29.0",
     "@tanstack/react-query": "^5.66.0",
-    "@tanstack/react-query-devtools": "^5.66.0",
-    "@xyflow/react": "^12.4.2",
     "axios": "^1.7.9",
     "dayjs": "^1.11.13",
     "embla-carousel-autoplay": "^7.1.0",
     "embla-carousel-react": "^7.1.0",
-    "fabric": "^6.6.1",
+    "fabric": "^5.5.1",
     "framer-motion": "^12.4.2",
     "fullcalendar": "^6.1.15",
     "html-to-image": "^1.11.13",
@@ -55,6 +53,8 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@tanstack/react-query-devtools": "^5.66.0",
+    "@types/fabric": "^5.3.10",
     "@biomejs/biome": "1.9.4",
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",

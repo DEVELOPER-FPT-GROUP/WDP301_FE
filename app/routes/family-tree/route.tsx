@@ -1,157 +1,270 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  useNodesState,
-  useEdgesState,
-  type Edge,
-  type Node,
-} from "@xyflow/react";
-import type {
-  BaseFamilyMemberData,
-  FamilyMemberNodeType,
-} from "./react-flow-base/types";
-import { createEdges } from "./react-flow-base/edges";
-import { initialNodes } from "./react-flow-base/nodes";
-import "./styles.css";
-import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
-import { FamilyMemberNode } from "./components/FamilyMemberNode";
-import { Constants } from "~/infrastructure/core/constants";
-import { jwtDecode } from "jwt-decode";
-import DownloadButton from "./components/DownloadButton";
+import type { Node } from "./types/node";
+import FamilyTree from "./components/FamilyTree";
+
+const root = {
+  id: 1,
+  name: "Test1",
+  image:
+    "https://png.pngtree.com/png-vector/20220709/ourmid/pngtree-businessman-user-avatar-wearing-suit-with-red-tie-png-image_5809521.png",
+  generation: 0,
+  onClick: (node) => {
+    console.log(node);
+  },
+  relationships: [
+    {
+      partner: {
+        id: 2,
+        name: "Test2",
+        onClick(node) {
+          console.log(node);
+        },
+      },
+      isMarried: true,
+      children: [
+        {
+          id: 3,
+          name: "Test3",
+          generation: 1,
+          relationships: [
+            {
+              partner: {
+                id: 4,
+                name: "Test4",
+              },
+              isMarried: true,
+              children: [
+                {
+                  id: 5,
+                  name: "Test5",
+                  generation: 2,
+                },
+                {
+                  id: 29,
+                  name: "Test29",
+                  generation: 2,
+                },
+              ],
+            },
+            {
+              partner: {
+                id: 25,
+                name: "Test25",
+              },
+              isMarried: true,
+              children: [
+                {
+                  id: 26,
+                  name: "Test26",
+                  generation: 2,
+                },
+              ],
+            },
+            {
+              partner: {
+                id: 27,
+                name: "Test27",
+              },
+              isMarried: false,
+              children: [
+                {
+                  id: 28,
+                  name: "Test28",
+                  generation: 2,
+                },
+              ],
+            },
+            {
+              children: [
+                {
+                  id: 100,
+                  name: "Test100",
+                  generation: 2,
+                },
+                {
+                  id: 101,
+                  name: "Test101",
+                  generation: 2,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 6,
+          name: "Test6",
+          generation: 1,
+          relationships: [
+            {
+              partner: {
+                id: 7,
+                image:
+                  "https://png.pngtree.com/png-vector/20220709/ourmid/pngtree-businessman-user-avatar-wearing-suit-with-red-tie-png-image_5809521.png",
+                name: "Test7",
+              },
+              isMarried: true,
+              children: [
+                {
+                  id: 8,
+                  name: "Test8",
+                  generation: 2,
+                  relationships: [
+                    {
+                      partner: {
+                        id: 9,
+                        name: "Test9",
+                      },
+                      isMarried: true,
+                    },
+                    // {
+                    //   partner: {
+                    //     id: 100,
+                    //     name: "Test100",
+                    //   },
+                    //   isMarried: true,
+                    // },
+                    // {
+                    //   partner: {
+                    //     id: 101,
+                    //     name: "Test101",
+                    //   },
+                    //   isMarried: true,
+                    // },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 10,
+          name: "Test10",
+          generation: 1,
+          relationships: [
+            {
+              partner: {
+                id: 11,
+                name: "Test11",
+              },
+              isMarried: true,
+              children: [
+                {
+                  id: 12,
+                  name: "Test12",
+                  generation: 2,
+                  relationships: [
+                    {
+                      partner: {
+                        id: 13,
+                        name: "Test13",
+                      },
+                      isMarried: true,
+                      children: [
+                        {
+                          id: 14,
+                          name: "Test14",
+                          generation: 3,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 22,
+          name: "Test22",
+          generation: 1,
+          relationships: [
+            {
+              children: [
+                {
+                  id: 24,
+                  name: "Test24",
+                  generation: 2,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 15,
+          name: "Test15",
+          generation: 1,
+          relationships: [
+            {
+              partner: {
+                id: 16,
+                name: "Test16",
+              },
+              isMarried: true,
+              children: [
+                {
+                  id: 17,
+                  name: "Test17",
+                  image:
+                    "https://png.pngtree.com/png-vector/20220709/ourmid/pngtree-businessman-user-avatar-wearing-suit-with-red-tie-png-image_5809521.png",
+                  generation: 2,
+                  relationships: [
+                    {
+                      partner: {
+                        id: 18,
+                        name: "Test18",
+                      },
+                      isMarried: true,
+                    },
+                  ],
+                },
+                {
+                  id: 19,
+                  name: "Test19",
+                  generation: 2,
+                  relationships: [
+                    {
+                      partner: {
+                        id: 20,
+                        name: "Test20",
+                      },
+                      isMarried: true,
+                      children: [
+                        {
+                          id: 21,
+                          name: "Test21",
+                          generation: 3,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+} as Node;
+
 export const meta = () => {
   return [{ title: "Cây Gia Đình" }];
 };
 
-// Định nghĩa kiểu dữ liệu cho node tạo gia đình
-type CreateFamilyNodeData = {
-  label: string;
-  onFamilyCreated?: (newFamilyId: string) => void;
-};
-
-// Đưa kiểu node vào Union type
-type NodeTypes = FamilyMemberNodeType | Node<CreateFamilyNodeData>;
-
-const FamilyTree: React.FC = () => {
-  // Sử dụng generic types rộng hơn để chứa cả hai loại node
-  const [nodes, setNodes, onNodesChange] = useNodesState<NodeTypes>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [isInteractive, setIsInteractive] = useState(true);
-  const getFamilyIdFromToken = () => {
-    const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
-
-    if (!token) return null;
-
-    try {
-      const decoded: any = jwtDecode(token);
-      // console.log(decoded);
-      return decoded.familyId; // 🛠️ Trích xuất memberId từ payload
-    } catch (error) {
-      console.error("Lỗi khi giải mã token:", error);
-      return null;
-    }
-  };
-  // Lấy familyId từ localStorage
-  const familyId = getFamilyIdFromToken();
-  // State để kiểm tra xem có familyId hợp lệ không
-
-  const { data, isSuccess, refetch } = useGetApi({
-    queryKey: ["family-tree", familyId],
-    endpoint: "members/get-members-in-family/:id",
-    urlParams: { id: familyId },
-    // Không sử dụng thuộc tính enabled vì hook không hỗ trợ
-  });
-
-  const nodeTypes = useMemo(
-    () => ({
-      familyMember: (props: any) => (
-        <FamilyMemberNode {...props} refetch={refetch} />
-      ),
-    }),
-    [refetch]
-  );
-
-  // Chỉ gọi API khi có familyId
-  useEffect(() => {
-    // Kiểm tra familyId trước khi xử lý dữ liệu
-    if (!familyId) {
-      return;
-    }
-
-    if (isSuccess && data?.data) {
-      const dataFormat = data.data
-        .filter((node: BaseFamilyMemberData) => !node.isDeleted) // Lọc chỉ lấy những node chưa bị xóa
-        .map((node: BaseFamilyMemberData) => {
-          const formattedNode = {
-            id: node.memberId,
-            type: "familyMember",
-            data: {
-              memberId: node.memberId,
-              familyId: node.familyId,
-              firstName: node.firstName,
-              middleName: node.middleName,
-              lastName: node.lastName,
-              dateOfBirth: node.dateOfBirth,
-              dateOfDeath: node.dateOfDeath,
-              placeOfBirth: node.placeOfBirth,
-              placeOfDeath: node.placeOfDeath,
-              isAlive: node.isAlive,
-              generation: node.generation || 0,
-              shortSummary: node.shortSummary,
-              gender: node.gender,
-              spouse: {} as { wifeId?: string; husbandId?: string },
-              parent: node.parent
-                ? {
-                    fatherId: node.parent.fatherId,
-                    motherId: node.parent.motherId,
-                  }
-                : null,
-              children: node.children,
-            },
-            position: { x: 0, y: 0 },
-          };
-
-          if (node.spouse?.wifeId) {
-            formattedNode.data.spouse.wifeId = node.spouse.wifeId;
-          }
-          if (node.spouse?.husbandId) {
-            formattedNode.data.spouse.husbandId = node.spouse.husbandId;
-          }
-
-          return formattedNode;
-        });
-
-      const formattedNodes = initialNodes(dataFormat);
-      const formattedEdges = createEdges(dataFormat).filter(
-        (edge) => edge !== undefined
-      );
-
-      setNodes(formattedNodes as NodeTypes[]);
-      setEdges(formattedEdges);
-    }
-  }, [data, isSuccess, familyId, setNodes, setEdges]);
-
+const TreePage: React.FC = () => {
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      nodeTypes={nodeTypes}
-      elementsSelectable={!isInteractive}
-      nodesDraggable={!isInteractive}
-      nodesConnectable={!isInteractive}
-      zoomOnDoubleClick={false}
-      fitView
-    >
-      <>
-        <Background />
-        <Controls showInteractive={isInteractive} />
-        <DownloadButton />
-      </>
-    </ReactFlow>
+    <div>
+      <h1>Family Tree</h1>
+      <FamilyTree
+        root={root}
+        options={{
+          id: "canvas",
+          width: 1920,
+          height: 1080,
+          boundToParentSize: true,
+        }}
+      />
+    </div>
   );
 };
 
-export default FamilyTree;
+export default TreePage;
