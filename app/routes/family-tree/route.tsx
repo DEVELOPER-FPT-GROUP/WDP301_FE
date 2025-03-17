@@ -1,6 +1,8 @@
+import React, { useMemo, useState } from "react";
 import type { Node } from "./types/node";
 import FamilyTree from "./components/FamilyTree";
-
+import DownloadModal from "./components/DownloadModal";
+import { Button, Group } from "@mantine/core";
 const root = {
   id: 1,
   name: "Test1",
@@ -251,17 +253,34 @@ export const meta = () => {
 };
 
 const TreePage: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
+  const treeOptions = useMemo(
+    () => ({
+      id: "canvas",
+      width: 1920,
+      height: 1080,
+      boundToParentSize: true,
+    }),
+    []
+  );
   return (
     <div>
-      <h1>Family Tree</h1>
-      <FamilyTree
-        root={root}
-        options={{
-          id: "canvas",
-          width: 1920,
-          height: 1080,
-          boundToParentSize: true,
-        }}
+      <Group justify="space-between" align="center" mb="md">
+        <h1>Family Tree</h1>
+        <Button onClick={openModal} variant="light">
+          Tải xuống
+        </Button>
+      </Group>
+
+      <FamilyTree root={root} options={treeOptions} />
+
+      <DownloadModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        canvasId="canvas"
       />
     </div>
   );

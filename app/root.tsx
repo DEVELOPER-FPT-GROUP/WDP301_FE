@@ -10,7 +10,6 @@ import {
   useNavigate,
 } from "react-router";
 import "@mantine/core/styles.css";
-import "@xyflow/react/dist/style.css";
 import "@mantine/notifications/styles.css";
 import "./app.css";
 import { createTheme, MantineProvider } from "@mantine/core";

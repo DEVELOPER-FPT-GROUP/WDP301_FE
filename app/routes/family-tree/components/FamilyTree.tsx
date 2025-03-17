@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { fabric } from "fabric";
 import { Node, Relation } from "../types/node";
 import { Options } from "../types/options";
@@ -27,211 +27,254 @@ const FamilyTree: React.FC<FamilyTreeProps> = ({ root, options }) => {
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const highlightManagerRef = useRef<HighlightManager | null>(null);
   const [canvasInitialized, setCanvasInitialized] = useState(false);
+  const isDrawingRef = useRef<boolean>(false);
 
-  // Initialize the canvas after component mount
+  // Khởi tạo canvas - chỉ chạy một lần
   useEffect(() => {
-    if (!canvasRef.current) return;
+    // Nếu đã khởi tạo canvas trước đó, không khởi tạo lại
+    if (fabricCanvasRef.current) return;
 
-    // Create a new Fabric canvas instance
-    const canvas = new fabric.Canvas(options.id, {
-      width: options.width,
-      height: options.height,
-      hoverCursor: "pointer",
-      selection: false,
-      allowTouchScrolling: true,
-      enableRetinaScaling: false,
-      isDrawingMode: false,
-    });
+    const initializeCanvas = () => {
+      try {
+        if (!document.getElementById(options.id)) return;
 
-    fabricCanvasRef.current = canvas;
-    setupCanvas(canvas);
-    highlightManagerRef.current = new HighlightManager(canvas);
-    setCanvasInitialized(true);
+        // Tạo canvas mới
+        const canvas = new fabric.Canvas(options.id, {
+          width: options.width,
+          height: options.height,
+          hoverCursor: "pointer",
+          selection: false,
+          allowTouchScrolling: true,
+          enableRetinaScaling: false,
+          isDrawingMode: false,
+        });
 
-    return () => {
-      // Clean up resources when component unmounts
-      if (fabricCanvasRef.current) {
-        fabricCanvasRef.current.dispose();
-        fabricCanvasRef.current = null;
+        fabricCanvasRef.current = canvas;
+        setupCanvas(canvas);
+        highlightManagerRef.current = new HighlightManager(canvas);
+        setCanvasInitialized(true);
+      } catch (err) {
+        console.error("Lỗi khởi tạo canvas:", err);
       }
     };
-  }, [options.id, options.width, options.height]);
 
-  // Draw the family tree after canvas is initialized
+    // Sử dụng setTimeout để đảm bảo DOM đã sẵn sàng
+    const timer = setTimeout(initializeCanvas, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (fabricCanvasRef.current) {
+        try {
+          fabricCanvasRef.current.dispose();
+        } catch (err) {
+          console.error("Lỗi giải phóng canvas:", err);
+        }
+        fabricCanvasRef.current = null;
+        setCanvasInitialized(false);
+      }
+    };
+  }, [options.id]);
+
+  // THÊM useEffect mới để lưu tham chiếu canvas
   useEffect(() => {
     if (!canvasInitialized || !fabricCanvasRef.current) return;
 
-    const canvas = fabricCanvasRef.current;
-
-    const drawNode = async (
-      node: Node,
-      parentNode?: Node,
-      parentRelation?: Relation
-    ) => {
-      const canvasCenter = canvas.getCenter();
-
-      if (parentNode) {
-        node.parent = parentNode;
-        node.parentRelation = parentRelation;
+    // Lưu tham chiếu canvas để có thể truy cập từ bên ngoài
+    if (typeof window !== "undefined") {
+      if (!(window as any).__canvases) {
+        (window as any).__canvases = {};
       }
+      (window as any).__canvases[options.id] = fabricCanvasRef.current;
+    }
 
-      const nodeObject = await createNode(node.name, node.image, node);
+    return () => {
+      if (typeof window !== "undefined" && (window as any).__canvases) {
+        delete (window as any).__canvases[options.id];
+      }
+    };
+  }, [canvasInitialized, options.id]);
+  // Tách biệt hàm vẽ cây để tránh tạo lại hàm này mỗi lần re-render
+  const drawTree = useCallback(
+    async (canvas: fabric.Canvas) => {
+      // Kiểm tra nếu đang vẽ thì không vẽ lại
+      if (isDrawingRef.current) return;
+      isDrawingRef.current = true;
 
-      nodeObject.on("mousedown", () => {
-        highlightManagerRef.current?.handleNodeClick(node);
-        node.onClick && node.onClick(node);
-      });
+      // Xóa tất cả đối tượng hiện có trên canvas
+      canvas.clear();
 
-      node._object = nodeObject;
-      const relationships = node.relationships;
+      const drawNode = async (
+        node: Node,
+        parentNode?: Node,
+        parentRelation?: Relation
+      ) => {
+        const canvasCenter = canvas.getCenter();
 
-      let left = canvasCenter.left;
-      const top =
-        minimumDistanceBetweenNodes * ((node.generation as number) + 1) +
-        (node.generation as number) * verticalDistanceBetweenNodes;
-      nodeObject.set({ left, top });
-      canvas.add(nodeObject);
+        if (parentNode) {
+          node.parent = parentNode;
+          node.parentRelation = parentRelation;
+        }
 
-      if (relationships && relationships.length > 0) {
-        relationships.sort((a, b) => {
-          if (!a.partner && b.partner) {
-            return -1;
-          } else if (a.partner && !b.partner) {
-            return 1;
-          } else if (a.isMarried && !b.isMarried) {
-            return -1;
-          } else if (!a.isMarried && b.isMarried) {
-            return 1;
-          } else {
-            return 0;
-          }
+        const nodeObject = await createNode(node.name, node.image, node);
+
+        nodeObject.on("mousedown", () => {
+          highlightManagerRef.current?.handleNodeClick(node);
+          node.onClick && node.onClick(node);
         });
 
-        let foundPartnerRelationship = false;
+        node._object = nodeObject;
+        const relationships = node.relationships;
 
-        relationships.forEach((relationship) => {
-          if (!relationship.partner && relationship.children?.length > 0) {
-            relationship.isPrimaryRelationship = true;
-          } else if (relationship.partner && !foundPartnerRelationship) {
-            relationship.isPrimaryRelationship = true;
-            foundPartnerRelationship = true;
-          } else {
-            relationship.isPrimaryRelationship = false;
-          }
-        });
+        let left = canvasCenter.left;
+        const top =
+          minimumDistanceBetweenNodes * ((node.generation as number) + 1) +
+          (node.generation as number) * verticalDistanceBetweenNodes;
+        nodeObject.set({ left, top });
+        canvas.add(nodeObject);
 
-        for (const relationship of node.relationships) {
-          if (relationship.partner) {
-            const partnerNode = await createNode(
-              relationship.partner.name,
-              relationship.partner.image,
-              relationship.partner
-            );
-
-            if (!relationship.partner.relationships) {
-              relationship.partner.relationships = [];
+        if (relationships && relationships.length > 0) {
+          relationships.sort((a, b) => {
+            if (!a.partner && b.partner) {
+              return -1;
+            } else if (a.partner && !b.partner) {
+              return 1;
+            } else if (a.isMarried && !b.isMarried) {
+              return -1;
+            } else if (!a.isMarried && b.isMarried) {
+              return 1;
+            } else {
+              return 0;
             }
-            relationship.partner.parent = node;
-            relationship.partner.parentRelation = relationship;
+          });
 
-            partnerNode.on("mousedown", () => {
-              highlightManagerRef.current?.handleNodeClick(
-                relationship.partner as Node
+          let foundPartnerRelationship = false;
+
+          relationships.forEach((relationship) => {
+            if (!relationship.partner && relationship.children?.length > 0) {
+              relationship.isPrimaryRelationship = true;
+            } else if (relationship.partner && !foundPartnerRelationship) {
+              relationship.isPrimaryRelationship = true;
+              foundPartnerRelationship = true;
+            } else {
+              relationship.isPrimaryRelationship = false;
+            }
+          });
+
+          for (const relationship of node.relationships) {
+            if (relationship.partner) {
+              const partnerNode = await createNode(
+                relationship.partner.name,
+                relationship.partner.image,
+                relationship.partner
               );
-              relationship.partner?.onClick &&
-                relationship.partner.onClick(relationship.partner);
-            });
 
-            relationship.partner._object = partnerNode;
-            partnerNode.set({ left, top });
-            canvas.add(partnerNode);
-          }
+              if (!relationship.partner.relationships) {
+                relationship.partner.relationships = [];
+              }
+              relationship.partner.parent = node;
+              relationship.partner.parentRelation = relationship;
 
-          if (relationship.children && relationship.children.length > 0) {
-            for (const child of relationship.children) {
-              await drawNode(child, node, relationship);
+              partnerNode.on("mousedown", () => {
+                highlightManagerRef.current?.handleNodeClick(
+                  relationship.partner as Node
+                );
+                relationship.partner?.onClick &&
+                  relationship.partner.onClick(relationship.partner);
+              });
+
+              relationship.partner._object = partnerNode;
+              partnerNode.set({ left, top });
+              canvas.add(partnerNode);
+            }
+
+            if (relationship.children && relationship.children.length > 0) {
+              for (const child of relationship.children) {
+                await drawNode(child, node, relationship);
+              }
             }
           }
         }
-      }
-    };
+      };
 
-    const drawPartnerRelations = (node: Node) => {
-      const relationships = node.relationships;
-      if (relationships && relationships.length > 0) {
-        for (let i = 0; i < relationships.length; i++) {
-          const relationship = relationships[i];
+      const drawPartnerRelations = (node: Node) => {
+        const relationships = node.relationships;
+        if (relationships && relationships.length > 0) {
+          for (let i = 0; i < relationships.length; i++) {
+            const relationship = relationships[i];
 
-          if (relationship.partner) {
-            relationship._relation = drawPartnerLine(
-              node._object as fabric.Group,
-              relationship.partner._object as fabric.Group,
-              relationship.isMarried as boolean,
-              relationship.isPrimaryRelationship === true
-            );
-            canvas.add(relationship._relation);
-          }
-          if (relationship.children && relationship.children.length > 0) {
-            for (const child of relationship.children) {
-              drawPartnerRelations(child);
+            if (relationship.partner) {
+              relationship._relation = drawPartnerLine(
+                node._object as fabric.Group,
+                relationship.partner._object as fabric.Group,
+                relationship.isMarried as boolean,
+                relationship.isPrimaryRelationship === true
+              );
+              canvas.add(relationship._relation);
+            }
+            if (relationship.children && relationship.children.length > 0) {
+              for (const child of relationship.children) {
+                drawPartnerRelations(child);
+              }
             }
           }
         }
-      }
-    };
+      };
 
-    const drawChildRelations = (node: Node) => {
-      const relationships = node.relationships;
-      if (relationships && relationships.length > 0) {
-        for (let i = 0; i < relationships.length; i++) {
-          const relationship = relationships[i];
-          const isPrimaryRelationship =
-            relationship.isPrimaryRelationship === true;
+      const drawChildRelations = (node: Node) => {
+        const relationships = node.relationships;
+        if (relationships && relationships.length > 0) {
+          for (let i = 0; i < relationships.length; i++) {
+            const relationship = relationships[i];
+            const isPrimaryRelationship =
+              relationship.isPrimaryRelationship === true;
 
-          if (relationship.children && relationship.children.length > 0) {
-            relationship._parentLine = drawParentLine(
-              relationship._relation ? relationship._relation : node,
-              isPrimaryRelationship
-            );
-            canvas.add(relationship._parentLine);
-
-            for (const child of relationship.children) {
-              drawChildRelations(child);
-              child._childLine = drawChildLine(
-                child as Node,
-                relationship._parentLine as fabric.Line,
+            if (relationship.children && relationship.children.length > 0) {
+              relationship._parentLine = drawParentLine(
+                relationship._relation ? relationship._relation : node,
                 isPrimaryRelationship
               );
-              canvas.add(child._childLine);
+              canvas.add(relationship._parentLine);
+
+              for (const child of relationship.children) {
+                drawChildRelations(child);
+                child._childLine = drawChildLine(
+                  child as Node,
+                  relationship._parentLine as fabric.Line,
+                  isPrimaryRelationship
+                );
+                canvas.add(child._childLine);
+              }
             }
           }
         }
+      };
+
+      try {
+        await drawNode(root);
+        positionNodes(canvas, root);
+        drawPartnerRelations(root);
+        drawChildRelations(root);
+        highlightManagerRef.current?.fixLineOverlapping();
+        bringNodesToFront(canvas);
+        canvas.renderAll();
+      } catch (err) {
+        console.error("Lỗi khi vẽ cây:", err);
+      } finally {
+        isDrawingRef.current = false;
       }
-    };
+    },
+    [root]
+  );
 
-    const drawTree = async () => {
-      await drawNode(root);
-
-      positionNodes(canvas, root);
-      drawPartnerRelations(root);
-      drawChildRelations(root);
-      highlightManagerRef.current?.fixLineOverlapping();
-      bringNodesToFront(canvas);
-      canvas.renderAll();
-    };
-
-    drawTree();
-  }, [root, options, canvasInitialized]);
-
-  // Set dynamic styles for canvas container
-  const containerStyle = {
-    width: "100%",
-    height: "100%",
-    position: "relative" as const,
-  };
+  // Chỉ vẽ cây khi canvas đã được khởi tạo và cây chưa được vẽ
+  useEffect(() => {
+    if (canvasInitialized && fabricCanvasRef.current && !isDrawingRef.current) {
+      drawTree(fabricCanvasRef.current);
+    }
+  }, [canvasInitialized, drawTree]);
 
   return (
-    <div style={containerStyle}>
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
       <canvas
         ref={canvasRef}
         id={options.id}
@@ -242,4 +285,4 @@ const FamilyTree: React.FC<FamilyTreeProps> = ({ root, options }) => {
   );
 };
 
-export default FamilyTree;
+export default React.memo(FamilyTree); // Sử dụng memo để tránh re-render không cần thiết

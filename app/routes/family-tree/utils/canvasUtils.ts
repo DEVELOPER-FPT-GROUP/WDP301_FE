@@ -1,3 +1,6 @@
+// @ts-ignore
+// eslint-disable-next-line
+/* global-disable chrome-passive-event-listeners */
 import { fabric } from "fabric";
 import type { Canvas } from "../types/canvas";
 import type { Options } from "../types/options";
