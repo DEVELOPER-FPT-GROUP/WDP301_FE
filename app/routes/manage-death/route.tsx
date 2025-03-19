@@ -15,7 +15,7 @@ import { Constants } from "~/infrastructure/core/constants";
 import { jwtDecode } from "jwt-decode";
 
 export const meta = () => [{ title: "Ngày giỗ các cụ" }];
-const getMemberIdFromToken = () => {
+const getFamilyIdFromToken = () => {
   const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
   if (!token) return null;
@@ -48,7 +48,7 @@ const route = () => {
     setSelectedData(null);
     setModalOpened(true);
   };
-  const memberId = getMemberIdFromToken();
+  const familyId = getFamilyIdFromToken();
   const refreshTable = () => setRefreshKey((prev) => prev + 1);
 
   const columns = [
@@ -81,7 +81,7 @@ const route = () => {
       <TableComponent
         key={refreshKey}
         columns={columns}
-        endpoint={`members/family/${memberId}/search?isAlive=false`}
+        endpoint={`members/family/${familyId}/search?isAlive=false`}
         onEdit={handleEdit}
         onDelete={handleDelete}
       />

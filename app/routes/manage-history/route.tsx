@@ -15,14 +15,14 @@ import { Constants } from "~/infrastructure/core/constants";
 import { jwtDecode } from "jwt-decode";
 export const meta = () => [{ title: "Lịch sử dòng họ" }];
 
-const getMemberIdFromToken = () => {
+const getFamilyIdFromToken = () => {
   const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
   if (!token) return null;
 
   try {
     const decoded: any = jwtDecode(token);
-    return decoded.memberId;
+    return decoded.familyId;
   } catch (error) {
     console.error("Lỗi khi giải mã token:", error);
     return null;
@@ -48,7 +48,8 @@ const route = () => {
     setSelectedData(null);
     setModalOpened(true);
   };
-  const memberId = getMemberIdFromToken();
+  const familyId = getFamilyIdFromToken();
+
   const refreshTable = () => setRefreshKey((prev) => prev + 1);
 
   const columns = [
@@ -79,7 +80,7 @@ const route = () => {
       <TableComponent
         key={refreshKey}
         columns={columns}
-        endpoint={`family-history/family/${memberId}/search?sortByStartDate=false`}
+        endpoint={`family-history/family/${familyId}/search?sortByStartDate=false`}
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
