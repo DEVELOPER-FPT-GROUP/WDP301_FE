@@ -79,7 +79,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           items={
             role === "system_admin"
               ? systemAdminMenuKeys
-              : role === "admin"
+              : role === "family_leader"
               ? adminMenuKeys
               : userMenuKeys
           }
