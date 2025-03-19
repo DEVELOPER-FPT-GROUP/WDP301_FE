@@ -21,12 +21,12 @@ const Contact = () => {
         <Title
           order={1}
           size={50}
-          fw={900}
+          fw={700}
           c="brown"
           ta="center"
           mb="xl"
           style={{
-            fontFamily: "'Pacifico', cursive",
+            fontFamily: "'Be Vietnam Pro', 'Roboto', sans-serif",
             letterSpacing: "1px",
           }}
         >
@@ -43,14 +43,23 @@ const Contact = () => {
             transition={{ duration: 0.8 }}
             viewport={{ once: false }}
           >
-            {/* <Image src="logo.png" width={40} alt="Gia Phả 4.0" /> */}
-            <MantineLogo size={30} />
+            <Box style={{ maxWidth: "150px" }}>
+              <Image
+                src="/logo.png"
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  objectFit: "contain",
+                }}
+              />
+            </Box>
+
             <Title
               order={2}
               fw={700}
               c="brown"
               style={{
-                fontFamily: "'Pacifico', cursive",
+                fontFamily: "Be Vietnam Pro",
               }}
               mt="md"
             >
@@ -104,7 +113,7 @@ const Contact = () => {
               fw={700}
               c="brown"
               style={{
-                fontFamily: "'Pacifico', cursive",
+                fontFamily: "'Be Vietnam Pro', 'Roboto', sans-serif",
               }}
             >
               Hòm thư góp ý

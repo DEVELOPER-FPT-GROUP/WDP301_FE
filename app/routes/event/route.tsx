@@ -429,12 +429,12 @@ export default function EventPage() {
           <Title
             order={1}
             size={30}
-            fw={900}
+            fw={700}
             c="brown"
             ta="center"
             mb="md"
             style={{
-              fontFamily: "'Pacifico', cursive",
+              fontFamily: "'Be Vietnam Pro', 'Roboto', sans-serif",
               letterSpacing: "1px",
             }}
           >
@@ -473,7 +473,7 @@ export default function EventPage() {
                   c={["orange", "blue", "red", "green"][index]}
                   fw={800}
                   style={{
-                    fontFamily: "'Pacifico', cursive",
+                    fontFamily: "'Be Vietnam Pro', 'Roboto', sans-serif",
                     letterSpacing: "1px",
                   }}
                 >

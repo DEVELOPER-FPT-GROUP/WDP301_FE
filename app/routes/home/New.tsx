@@ -6,48 +6,81 @@ import Autoplay from "embla-carousel-autoplay";
 
 const news = [
   {
-    title: "Hướng dẫn sử dụng",
+    title: "Giới thiệu sản phẩm",
     image: "test.jpg",
     author: {
-      name: "kkkk",
+      name: "GCONNECT",
       avatar: "test.jpg",
-      date: "10 Jan 2023",
+      date: "14 Feb 2025",
       readTime: "2 phút đọc",
     },
-    url: "https://www.facebook.com/profile.php?id=61573126883257",
+    url: "https://www.facebook.com/photo?fbid=122097424898770896&set=a.122097424922770896",
   },
   {
-    title: "Cách tối ưu cây sao cho hợp lý",
+    title: "Giới thiệu dòng họ, cội nguồn",
     image: "test.jpg",
     author: {
-      name: "kkk",
+      name: "GCONNECT",
       avatar: "test.jpg",
-      date: "15 Feb 2023",
+      date: "17 Feb 2025",
       readTime: "3 phút đọc",
     },
-    url: "https://www.facebook.com/profile.php?id=61573126883257",
+    url: "https://www.facebook.com/photo?fbid=122099727380770896&set=a.122097424922770896",
   },
   {
-    title: "Bản cập nhật mới có gì",
+    title: "Khó khăn khi về quê",
     image: "test.jpg",
     author: {
-      name: "kkk",
+      name: "GCONNECT",
       avatar: "test.jpg",
-      date: "22 Mar 2023",
-      readTime: "4 phút đọc",
+      date: "21 Feb 2025",
+      readTime: "1 phút đọc",
     },
-    url: "https://www.facebook.com/profile.php?id=61573126883257",
+    url: "https://www.facebook.com/photo?fbid=122105695496770896&set=a.122097424922770896",
   },
   {
-    title: "Ra mắt tính năng ChatBot",
+    title: "Demo sản phẩm",
     image: "test.jpg",
     author: {
-      name: "kkk",
+      name: "GCONNECT",
       avatar: "test.jpg",
-      date: "22 Mar 2023",
-      readTime: "4 phút đọc",
+      date: "4 Mar 2025",
+      readTime: "2 phút đọc",
     },
-    url: "https://www.facebook.com/profile.php?id=61573126883257",
+    url: "https://www.facebook.com/61573126883257/videos/615094228067098",
+  },
+  {
+    title: "Góc khảo sát",
+    image: "test.jpg",
+    author: {
+      name: "GCONNECT",
+      avatar: "test.jpg",
+      date: "10 Mar 2025",
+      readTime: "2 phút đọc",
+    },
+    url: "https://www.facebook.com/photo?fbid=122115436166770896&set=a.122097424922770896",
+  },
+  {
+    title: "Giới thiệu tính năng",
+    image: "test.jpg",
+    author: {
+      name: "GCONNECT",
+      avatar: "test.jpg",
+      date: "12 Mar 2025",
+      readTime: "2 phút đọc",
+    },
+    url: "https://www.facebook.com/photo?fbid=122115993908770896&set=a.122097424922770896",
+  },
+  {
+    title: "Trước và sau",
+    image: "test.jpg",
+    author: {
+      name: "GCONNECT",
+      avatar: "test.jpg",
+      date: "14 Mar 2025",
+      readTime: "2 phút đọc",
+    },
+    url: "https://www.facebook.com/photo?fbid=122116590746770896&set=pcb.122116590314770896",
   },
 ];
 
@@ -72,12 +105,12 @@ const New = () => {
         <Title
           order={1}
           size={50}
-          fw={900}
+          fw={700}
           c="brown"
           ta="center"
           mb="md"
           style={{
-            fontFamily: "'Pacifico', cursive",
+            fontFamily: "'Be Vietnam Pro', 'Roboto', sans-serif",
             letterSpacing: "1px",
           }}
         >

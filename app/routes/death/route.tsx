@@ -81,10 +81,13 @@ const MemorialSchedule = () => {
         <Title
           order={1}
           size={32}
-          fw={900}
+          fw={700}
           c="brown"
           ta="center"
-          style={{ fontFamily: "'Pacifico', cursive", letterSpacing: "1px" }}
+          style={{
+            fontFamily: "'Be Vietnam Pro', 'Roboto', sans-serif",
+            letterSpacing: "1px",
+          }}
         >
           🏮 Lịch giỗ các cụ 🏮
         </Title>

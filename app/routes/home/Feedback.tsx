@@ -50,11 +50,11 @@ const Feedback = () => {
         <Title
           order={1}
           size={50}
-          fw={900}
+          fw={700}
           c="brown"
           mb="xl"
           style={{
-            fontFamily: "'Pacifico', cursive",
+            fontFamily: "'Be Vietnam Pro', 'Roboto', sans-serif",
             lineHeight: "1.3",
           }}
         >
@@ -149,14 +149,14 @@ const Feedback = () => {
         <Title
           order={1}
           size={48}
-          fw={900}
+          fw={700}
           c="brown"
           ta="center"
-          mb="md"
+          mb="xl"
           mt="5xl"
           style={{
             margin: "120px 0 50px",
-            fontFamily: "'Pacifico', cursive",
+            fontFamily: "'Be Vietnam Pro', 'Roboto', sans-serif",
             lineHeight: "1.3",
           }}
         >

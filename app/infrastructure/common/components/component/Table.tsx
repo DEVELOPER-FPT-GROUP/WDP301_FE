@@ -17,6 +17,8 @@ interface TableProps<T> {
   endpoint: string;
   onEdit: (row: T) => void;
   onDelete: (row: T) => void;
+  showEdit?: boolean; // Điều khiển hiển thị nút Edit
+  showDelete?: boolean; // Điều khiển hiển thị nút Delete
 }
 
 export function TableComponent<T extends { id: string }>({
@@ -24,6 +26,8 @@ export function TableComponent<T extends { id: string }>({
   endpoint,
   onEdit,
   onDelete,
+  showEdit = true, // Mặc định hiển thị
+  showDelete = true, // Mặc định hiển thị
 }: TableProps<T>) {
   const perPageOptions = [10, 20, 50];
   const [search, setSearch] = useState("");
@@ -36,6 +40,41 @@ export function TableComponent<T extends { id: string }>({
     endpoint,
     queryParams: { page: currentPage, limit: perPage, search: debouncedSearch },
   });
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(value);
+  };
+  const formatSubscription = (value: string) => {
+    const mapping: Record<string, string> = {
+      six_people: "Gói cho nhóm 6 người",
+      no_limit: "Gói không giới hạn",
+      fifty_people: "Gói cho nhóm 50 người",
+      thirty_people: "Gói cho nhóm 30 người",
+      fifteen_people: "Gói cho nhóm 15 người",
+    };
+    return mapping[value] || value; // Nếu không tìm thấy, trả về nguyên gốc
+  };
+  // Chuyển đổi status thành tiếng Việt
+  const formatStatus = (status: string) => {
+    const statusMapping: Record<string, string> = {
+      pending: "Chờ xử lý",
+      active: "Hoạt động",
+      expired: "Hết hạn",
+      cancelled: "Đã hủy",
+    };
+    return statusMapping[status] || status; // Nếu không tìm thấy, trả về nguyên gốc
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
+  };
 
   return (
     <>
@@ -72,21 +111,41 @@ export function TableComponent<T extends { id: string }>({
             {data?.data?.items.length > 0 ? (
               data.data.items.map((row: T) => (
                 <Table.Tr key={row.id}>
-                  {columns.map((col) => (
-                    <Table.Td key={col.key as string}>
-                      {String(row[col.key] || "")}
+                  {columns.map((col) => {
+                    let value = row[col.key] as unknown as string; // Ép kiểu để tránh lỗi TypeScript
+
+                    // Format từng giá trị theo cột
+                    if (col.key === "price") {
+                      value = formatCurrency(value as unknown as number); // Ép kiểu số
+                    } else if (col.key === "subscription") {
+                      value = formatSubscription(value);
+                    } else if (col.key === "status") {
+                      value = formatStatus(value);
+                    } else if (col.key === "createdAt") {
+                      value = formatDate(value);
+                    }
+                    return (
+                      <Table.Td key={col.key as string}>
+                        {String(value)}
+                      </Table.Td>
+                    );
+                  })}
+                  {(showEdit || showDelete) && (
+                    <Table.Td>
+                      <Group gap="xs">
+                        {showEdit && (
+                          <ActionIcon color="blue" onClick={() => onEdit(row)}>
+                            <IconEdit size={18} />
+                          </ActionIcon>
+                        )}
+                        {showDelete && (
+                          <ActionIcon color="red" onClick={() => onDelete(row)}>
+                            <IconTrash size={18} />
+                          </ActionIcon>
+                        )}
+                      </Group>
                     </Table.Td>
-                  ))}
-                  <Table.Td>
-                    <Group gap="xs">
-                      <ActionIcon color="blue" onClick={() => onEdit(row)}>
-                        <IconEdit size={18} />
-                      </ActionIcon>
-                      <ActionIcon color="red" onClick={() => onDelete(row)}>
-                        <IconTrash size={18} />
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
+                  )}
                 </Table.Tr>
               ))
             ) : (
@@ -109,7 +168,10 @@ export function TableComponent<T extends { id: string }>({
           <Select
             data={perPageOptions.map((opt) => opt.toString())}
             value={perPage.toString()}
-            onChange={(value) => setPerPage(Number(value))}
+            onChange={(value) => {
+              setPerPage(Number(value));
+              setCurrentPage(1);
+            }}
             allowDeselect={false}
             w={60}
             style={{ minWidth: "50px", textAlign: "center" }}
@@ -118,7 +180,7 @@ export function TableComponent<T extends { id: string }>({
           <span>bản ghi / trang</span>
         </Group>
         <Pagination
-          total={data?.totalPages || 1}
+          total={data?.data?.totalPages || 1}
           value={currentPage}
           onChange={setCurrentPage}
         />
