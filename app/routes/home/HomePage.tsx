@@ -41,11 +41,11 @@ const HomePage = () => {
               <Title
                 order={1}
                 size={50}
-                fw={900}
+                fw={700}
                 c="brown"
                 mb="xl"
                 style={{
-                  fontFamily: "'Lobster', cursive",
+                  fontFamily: "'Be Vietnam Pro', 'Roboto', sans-serif",
                   lineHeight: "1.3",
                 }}
               >

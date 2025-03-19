@@ -19,5 +19,9 @@ export class AppRoutes {
     static readonly MANAGE_FAMILY_HISTORY = "/manage-history";
     static readonly MANAGE_FAMILY_DEATH = "/manage-death";
     static readonly MANAGE_MEMBER = "/manage-member";
+    static readonly DASHBOARD = "/dashboard";
+    static readonly REVENUE = "/revenue";
+    static readonly MANAGE_ACCOUNT = "/manage-account";
+    static readonly MANAGE_ORDER = "/manage-order";
   };
 }

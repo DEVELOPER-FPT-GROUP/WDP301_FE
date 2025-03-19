@@ -5,7 +5,11 @@ import { jwtDecode } from "jwt-decode";
 import type { ReactNode } from "react";
 import MenuItemsRenderer from "~/infrastructure/common/components/layout/menuItems";
 import { Constants } from "~/infrastructure/core/constants";
-import { adminMenuKeys, userMenuKeys } from "~/infrastructure/core/menuKeys";
+import {
+  adminMenuKeys,
+  systemAdminMenuKeys,
+  userMenuKeys,
+} from "~/infrastructure/core/menuKeys";
 import { useLogout } from "~/infrastructure/utils/auth/auth";
 interface AppLayoutProps {
   children: ReactNode;
@@ -72,7 +76,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       </AppShell.Header>
       <AppShell.Navbar p="md">
         <MenuItemsRenderer
-          items={role !== "admin" ? userMenuKeys : adminMenuKeys}
+          items={
+            role === "system_admin"
+              ? systemAdminMenuKeys
+              : role === "admin"
+              ? adminMenuKeys
+              : userMenuKeys
+          }
           userRoles={[]}
         />
       </AppShell.Navbar>
