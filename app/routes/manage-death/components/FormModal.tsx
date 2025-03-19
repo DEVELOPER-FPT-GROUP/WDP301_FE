@@ -4,16 +4,15 @@ import {
   TextInput,
   Button,
   Stack,
-  Title,
   SimpleGrid,
   Group,
   LoadingOverlay,
   Center,
   Select,
+  Text,
 } from "@mantine/core";
 import {
   useGetApi,
-  usePostApi,
   usePutApi,
 } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import {
@@ -32,7 +31,7 @@ const getMemberIdFromToken = () => {
 
   try {
     const decoded: any = jwtDecode(token);
-    return decoded.memberId;
+    return decoded.familyId;
   } catch (error) {
     console.error("Lỗi khi giải mã token:", error);
     return null;
@@ -77,6 +76,7 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
 
   useEffect(() => {
     if (data) {
+      // console.log("data: ", data);
       setIsFetchingData(true);
       form.setValues({
         memberId: data.memberId,
@@ -99,6 +99,7 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
       isAlive: false,
     },
   });
+  // console.log("members: ", members);
 
   const putMutation = usePutApi({
     endpoint: `members/${form.values.memberId}`,
@@ -145,9 +146,9 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
       opened={opened}
       onClose={handleClose}
       title={
-        <Title order={2} c={"brown"}>
+        <Text size="xl" fw={700} c="brown">
           {data ? "Chỉnh sửa ngày giỗ" : "Thêm mới ngày giỗ"}
-        </Title>
+        </Text>
       }
       centered
       size="60%"
@@ -162,6 +163,10 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack>
             <SimpleGrid cols={2} spacing="md">
+              {/* <p>
+                {members.data.items.length > 0 &&
+                  JSON.stringify(members.data.items)}
+              </p> */}
               <Select
                 label="Thành viên"
                 data={
@@ -169,8 +174,9 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
                   members.data.items &&
                   members.data.items.length > 0 &&
                   members.data.items
-                    .filter((member: any) => !member.dateOfDeath)
+                    .filter((member: any) => member.dateOfDeath)
                     .map((member: any) => {
+                      console.log("member: ", member);
                       return {
                         value: member.memberId,
                         label:
@@ -182,10 +188,14 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
                       };
                     })
                 }
+                // data={[
+                //   { value: "react", label: "React" },
+                //   { value: "ng", label: "Angular" },
+                // ]}
                 allowDeselect={false}
                 {...form.getInputProps("memberId")}
                 withAsterisk
-              ></Select>
+              />
               <DateInput
                 label="Ngày mất (lịch dương)"
                 locale="vi"
@@ -198,13 +208,13 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
             </SimpleGrid>
             <SimpleGrid cols={2} spacing="md">
               <TextInput
-                label="Thờ cúng tại"
-                placeholder="Thờ cúng tại"
+                label="An táng tại"
+                placeholder="An táng tại"
                 {...form.getInputProps("placeOfDeath")}
               />
               <TextInput
-                label="An táng tại"
-                placeholder="An táng tại"
+                label="Thờ cúng tại"
+                placeholder="Thờ cúng tại"
                 {...form.getInputProps("worship")}
               />
             </SimpleGrid>

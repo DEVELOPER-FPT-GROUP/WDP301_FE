@@ -25,6 +25,7 @@ import {
 import { Notifications } from "@mantine/notifications";
 import { useEffect } from "react";
 import { AppRoutes } from "./infrastructure/core/AppRoutes";
+import { getDataFromToken } from "./infrastructure/utils/common";
 
 const queryClient = new QueryClient();
 export const links: Route.LinksFunction = () => [
@@ -109,7 +110,7 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  console.log("location", location.pathname);
+  // console.log("location", location.pathname);
 
   useEffect(() => {
     const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
@@ -123,7 +124,13 @@ export default function App() {
     const currentPath = location.pathname;
 
     if (token && redirectPaths.includes(currentPath)) {
-      navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
+      const data = getDataFromToken();
+      // console.log("login", data.role);
+      if (data.role == "system_admin") {
+        navigate(AppRoutes.PRIVATE.DASHBOARD, { replace: true });
+      } else {
+        navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
+      }
     } else if (!token && !redirectPaths.includes(currentPath)) {
       navigate(AppRoutes.PUBLIC.AUTH.LOGIN, { replace: true });
     } else if (

@@ -233,7 +233,7 @@ export function TableComponent<
         >
           <Tabs.List>
             <Tabs.Tab value="active" leftSection={<IconUsers size={16} />}>
-              Active Members Table
+              Thành viên hoạt động
               {activeMembersCount > 0 && (
                 <Badge
                   ml="xs"
@@ -257,7 +257,7 @@ export function TableComponent<
                 ) : null
               }
             >
-              Deleted Members Table
+              Thành viên bị xóa
             </Tabs.Tab>
           </Tabs.List>
 
