@@ -13,6 +13,7 @@ import { z } from "zod";
 import useLogin from "~/infrastructure/api/hooks/auth/useLogin";
 import { AppRoutes } from "~/infrastructure/core/AppRoutes";
 import { Constants } from "~/infrastructure/core/constants";
+import { getDataFromToken } from "~/infrastructure/utils/common";
 
 export const meta = () => {
   return [{ title: "Đăng nhập" }];
@@ -27,7 +28,13 @@ const Login = () => {
         Constants.API_ACCESS_TOKEN_KEY,
         data.data.accessToken
       );
-      navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
+      const dataToken = getDataFromToken();
+      if (dataToken.role == "system_admin") {
+        navigate(AppRoutes.PRIVATE.DASHBOARD, { replace: true });
+      } else {
+        navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
+      }
+      // navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
     },
   });
 

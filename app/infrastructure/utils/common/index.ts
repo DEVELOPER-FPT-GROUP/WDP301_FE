@@ -18,7 +18,7 @@ export const getDataFromToken = () => {
 
   try {
     const decoded: any = jwtDecode(token);
-    // console.log(decoded);
+    console.log(decoded);
     return decoded;
   } catch (error) {
     console.error("Lỗi khi giải mã token:", error);

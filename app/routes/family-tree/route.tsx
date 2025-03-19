@@ -233,7 +233,11 @@ const TreePage: React.FC = () => {
       {enhancedRoot && (
         <Group justify="space-between" align="center" mb="md">
           <Group>
-            <h1>Cây gia phả</h1>
+            <h1>
+              {dataToken.familyName
+                ? "Dòng họ " + dataToken.familyName
+                : "Cây gia phả"}{" "}
+            </h1>
           </Group>
           <Button onClick={openModal} variant="light">
             Tải xuống

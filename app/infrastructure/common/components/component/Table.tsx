@@ -40,12 +40,14 @@ export function TableComponent<T extends { id: string }>({
     endpoint,
     queryParams: { page: currentPage, limit: perPage, search: debouncedSearch },
   });
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
     }).format(value);
   };
+
   const formatSubscription = (value: string) => {
     const mapping: Record<string, string> = {
       six_people: "Gói cho nhóm 6 người",
@@ -56,6 +58,7 @@ export function TableComponent<T extends { id: string }>({
     };
     return mapping[value] || value; // Nếu không tìm thấy, trả về nguyên gốc
   };
+
   // Chuyển đổi status thành tiếng Việt
   const formatStatus = (status: string) => {
     const statusMapping: Record<string, string> = {
@@ -68,6 +71,7 @@ export function TableComponent<T extends { id: string }>({
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return "";
     const date = new Date(dateString);
     return new Intl.DateTimeFormat("vi-VN", {
       day: "2-digit",
@@ -102,50 +106,59 @@ export function TableComponent<T extends { id: string }>({
           <Table.Thead>
             <Table.Tr>
               {columns.map((col) => (
-                <Table.Th key={col.key as string}>{col.label}</Table.Th>
+                <Table.Th key={col.key.toString()}>{col.label}</Table.Th>
               ))}
               <Table.Th>Hành động</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {data?.data?.items.length > 0 ? (
+            {data?.data?.items && data.data.items.length > 0 ? (
               data.data.items.map((row: T) => (
                 <Table.Tr key={row.id}>
                   {columns.map((col) => {
-                    let value = row[col.key] as unknown as string; // Ép kiểu để tránh lỗi TypeScript
+                    // Lấy giá trị và xử lý undefined
+                    let value = row[col.key] !== undefined ? row[col.key] : "";
 
                     // Format từng giá trị theo cột
-                    if (col.key === "price") {
-                      value = formatCurrency(value as unknown as number); // Ép kiểu số
-                    } else if (col.key === "subscription") {
-                      value = formatSubscription(value);
-                    } else if (col.key === "status") {
-                      value = formatStatus(value);
-                    } else if (col.key === "createdAt") {
-                      value = formatDate(value);
+                    if (col.key === "price" && value !== "") {
+                      value = formatCurrency(value as unknown as number);
+                    } else if (col.key === "subscription" && value !== "") {
+                      value = formatSubscription(value as unknown as string);
+                    } else if (col.key === "status" && value !== "") {
+                      value = formatStatus(value as unknown as string);
+                    } else if (col.key === "createdAt" && value !== "") {
+                      value = formatDate(value as unknown as string);
                     }
+
                     return (
-                      <Table.Td key={col.key as string}>
+                      <Table.Td key={`${row.id}-${col.key.toString()}`}>
                         {String(value)}
                       </Table.Td>
                     );
                   })}
-                  {(showEdit || showDelete) && (
-                    <Table.Td>
-                      <Group gap="xs">
-                        {showEdit && (
-                          <ActionIcon color="blue" onClick={() => onEdit(row)}>
-                            <IconEdit size={18} />
-                          </ActionIcon>
-                        )}
-                        {showDelete && (
-                          <ActionIcon color="red" onClick={() => onDelete(row)}>
-                            <IconTrash size={18} />
-                          </ActionIcon>
-                        )}
-                      </Group>
-                    </Table.Td>
-                  )}
+                  <Table.Td key={`${row.id}-actions`}>
+                    <Group gap="xs">
+                      {/* Added unique keys to these ActionIcon components */}
+                      {showEdit && (
+                        <ActionIcon
+                          key={`${row.id}-edit`}
+                          color="blue"
+                          onClick={() => onEdit(row)}
+                        >
+                          <IconEdit size={18} />
+                        </ActionIcon>
+                      )}
+                      {showDelete && (
+                        <ActionIcon
+                          key={`${row.id}-delete`}
+                          color="red"
+                          onClick={() => onDelete(row)}
+                        >
+                          <IconTrash size={18} />
+                        </ActionIcon>
+                      )}
+                    </Group>
+                  </Table.Td>
                 </Table.Tr>
               ))
             ) : (

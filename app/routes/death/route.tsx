@@ -91,15 +91,13 @@ const MemorialSchedule = () => {
           🏮 Lịch giỗ các cụ 🏮
         </Title>
 
-        {data?.data?.items.length > 0 && (
-          <TextInput
-            placeholder="Tìm kiếm lịch giỗ..."
-            w={500}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-        )}
+        <TextInput
+          placeholder="Tìm kiếm lịch giỗ..."
+          w={500}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
       </Group>
 
       {isLoading || isFetching ? (
