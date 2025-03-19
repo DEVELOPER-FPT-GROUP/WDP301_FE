@@ -18,37 +18,31 @@ interface FamilyStory {
 }
 
 export const meta = () => [{ title: "Lịch sử dòng họ" }];
-const getMemberIdFromToken = () => {
+const getFamilyIdFromToken = () => {
   const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
   if (!token) return null;
 
   try {
     const decoded: any = jwtDecode(token);
-    return decoded.memberId; // 🛠️ Trích xuất memberId từ payload
+    return decoded.familyId;
   } catch (error) {
     console.error("Lỗi khi giải mã token:", error);
     return null;
   }
 };
 const FamilyHistory = () => {
-  const [familyHistories, setFamilyHistories] = useState<FamilyStory[]>([]);
   const [selectedStory, setSelectedStory] = useState<FamilyStory | null>(null);
   const [viewModalOpened, setViewModalOpened] = useState(false);
   const [loadingModal, setLoadingModal] = useState(false);
-  const memberId = getMemberIdFromToken();
-  const { data, isSuccess, isLoading } = useGetApi({
+  const familyId = getFamilyIdFromToken();
+
+  const { data, isLoading, isFetching, refetch } = useGetApi({
     queryKey: ["history"],
     endpoint: "family-history/family/:id/search",
-    urlParams: { id: memberId },
+    urlParams: { id: familyId },
     queryParams: { limit: 1000, sortByStartDate: true },
   });
-
-  useEffect(() => {
-    if (isSuccess && data) {
-      setFamilyHistories(data.data.items);
-    }
-  }, [data, isSuccess]);
 
   const openViewModal = (story: FamilyStory) => {
     setSelectedStory(story);
@@ -68,13 +62,13 @@ const FamilyHistory = () => {
         📖👨‍👩‍👧‍👦 Lịch sử dòng họ 👨‍👩‍👧‍👦📖
       </Title>
 
-      {isLoading ? (
+      {isLoading || isFetching ? (
         <Center>
           <Loader color="blue" size="lg" />
         </Center>
-      ) : familyHistories.length > 0 ? (
+      ) : data?.data?.items.length > 0 ? (
         <FamilyTimeline
-          stories={familyHistories}
+          stories={data?.data?.items}
           onSelectStory={openViewModal}
         />
       ) : (

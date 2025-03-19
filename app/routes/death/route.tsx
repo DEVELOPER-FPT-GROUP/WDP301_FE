@@ -27,15 +27,14 @@ import { Constants } from "~/infrastructure/core/constants";
 
 export const meta = () => [{ title: "Lịch giỗ các cụ" }];
 
-const getMemberIdFromToken = () => {
+const getFamilyIdFromToken = () => {
   const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
   if (!token) return null;
 
   try {
     const decoded: any = jwtDecode(token);
-    console.log(decoded);
-    return decoded.familyId; // 🛠️ Trích xuất memberId từ payload
+    return decoded.familyId; // 🛠️ Trích xuất familyId từ payload
   } catch (error) {
     console.error("Lỗi khi giải mã token:", error);
     return null;
@@ -45,10 +44,10 @@ const getMemberIdFromToken = () => {
 const MemorialSchedule = () => {
   const [search, setSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState(""); // Lưu giá trị để gọi API
-  const memberId = getMemberIdFromToken();
+  const familyId = getFamilyIdFromToken();
 
-  const { data, isLoading, refetch } = useGetApi({
-    endpoint: `members/family/${memberId}/search`,
+  const { data, isLoading, isFetching, refetch } = useGetApi({
+    endpoint: `members/family/${familyId}/search`,
     queryKey: ["members", searchQuery],
     queryParams: {
       page: 1,
@@ -81,28 +80,33 @@ const MemorialSchedule = () => {
         <Title
           order={1}
           size={32}
-          fw={900}
+          fw={700}
           c="brown"
           ta="center"
-          style={{ fontFamily: "'Pacifico', cursive", letterSpacing: "1px" }}
+          style={{
+            fontFamily: "'Be Vietnam Pro', 'Roboto', sans-serif",
+            letterSpacing: "1px",
+          }}
         >
           🏮 Lịch giỗ các cụ 🏮
         </Title>
 
-        <TextInput
-          placeholder="Tìm kiếm lịch giỗ..."
-          w={500}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
+        {data?.data?.items.length > 0 && (
+          <TextInput
+            placeholder="Tìm kiếm lịch giỗ..."
+            w={500}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+        )}
       </Group>
 
-      {isLoading ? (
+      {isLoading || isFetching ? (
         <Center>
           <Loader />
         </Center>
-      ) : (
+      ) : data?.data?.items.length > 0 ? (
         <SimpleGrid cols={2} spacing="lg">
           {data.data.items.map((person: any) => (
             <Card
@@ -191,6 +195,12 @@ const MemorialSchedule = () => {
             </Card>
           ))}
         </SimpleGrid>
+      ) : (
+        <Center mt="md">
+          <Title order={3} size="sm" c="gray">
+            Không có dữ liệu ngày giỗ gia đình.
+          </Title>
+        </Center>
       )}
     </AppShell>
   );

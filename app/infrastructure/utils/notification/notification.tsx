@@ -41,6 +41,7 @@ const notify = (
     icon: icons[type],
     loading: false,
     radius: "md",
+    style: { zIndex: 9999 }, // Tăng z-index để hiển thị trên Header
   });
 };
 

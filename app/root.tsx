@@ -109,20 +109,28 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  console.log("location", location.pathname);
+
   useEffect(() => {
     const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
-    // Redirect only if the user is not already on the correct page
-    if (token && location.pathname === AppRoutes.PUBLIC.AUTH.LOGIN) {
-      navigate(AppRoutes.ROOT, { replace: true });
+    const redirectPaths = [
+      AppRoutes.PUBLIC.AUTH.LOGIN,
+      AppRoutes.ROOT,
+      AppRoutes.PUBLIC.GUEST.HOME,
+      AppRoutes.PUBLIC.AUTH.SIGN_UP,
+    ];
+    const currentPath = location.pathname;
+
+    if (token && redirectPaths.includes(currentPath)) {
+      navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
+    } else if (!token && !redirectPaths.includes(currentPath)) {
+      navigate(AppRoutes.PUBLIC.AUTH.LOGIN, { replace: true });
     } else if (
       !token &&
-      location.pathname !== AppRoutes.PUBLIC.AUTH.LOGIN &&
-      location.pathname !== AppRoutes.PUBLIC.GUEST.HOME &&
-      location.pathname !== AppRoutes.PUBLIC.AUTH.SIGN_UP
+      (currentPath === AppRoutes.ROOT ||
+        currentPath === AppRoutes.PUBLIC.GUEST.HOME)
     ) {
-      navigate(AppRoutes.PUBLIC.AUTH.LOGIN, { replace: true });
-    } else if (!token && location.pathname === AppRoutes.PUBLIC.GUEST.HOME) {
       navigate(AppRoutes.PUBLIC.GUEST.HOME, { replace: true });
     }
   }, [isLoggedIn, location.pathname, navigate]);

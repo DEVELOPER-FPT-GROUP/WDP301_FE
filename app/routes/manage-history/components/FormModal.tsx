@@ -29,14 +29,14 @@ import * as yup from "yup";
 import { useForm } from "@mantine/form";
 import { Constants } from "~/infrastructure/core/constants";
 import { jwtDecode } from "jwt-decode";
-const getMemberIdFromToken = () => {
+const getFamilyIdFromToken = () => {
   const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
 
   if (!token) return null;
 
   try {
     const decoded: any = jwtDecode(token);
-    return decoded.memberId;
+    return decoded.familyId;
   } catch (error) {
     console.error("Lỗi khi giải mã token:", error);
     return null;
@@ -64,7 +64,7 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
 
     setUploadedFiles((prev: File[]) => [...prev, ...files]);
   };
-  const memberId = getMemberIdFromToken();
+  const familyId = getFamilyIdFromToken();
   const handleRemoveImage = (image: any) => {
     if (image.isNew) {
       console.log(image);
@@ -103,7 +103,7 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
 
   const form = useForm({
     initialValues: {
-      familyId: memberId,
+      familyId: familyId,
       historicalRecordTitle: "",
       historicalRecordSummary: "",
       historicalRecordDetails: "",
@@ -164,7 +164,7 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
     const formData = new FormData();
 
     if (!data) {
-      formData.append("familyId", memberId);
+      formData.append("familyId", familyId);
     }
     formData.append("historicalRecordTitle", values.historicalRecordTitle);
     formData.append("historicalRecordSummary", values.historicalRecordSummary);

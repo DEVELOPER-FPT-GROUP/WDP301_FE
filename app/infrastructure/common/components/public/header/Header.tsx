@@ -36,7 +36,7 @@ export default function Header() {
         top: 0,
         width: "100%",
         backgroundColor: "white", // Đảm bảo không bị trong suốt khi scroll
-        zIndex: 1000, // Giữ trên các phần tử khác
+        zIndex: 100, // Giữ trên các phần tử khác
       }}
     >
       <header className="header">
