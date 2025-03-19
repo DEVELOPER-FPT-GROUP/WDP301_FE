@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { fabric } from "fabric";
 import { Node, Relation } from "../types/node";
 import { Options } from "../types/options";
-import { setupCanvas } from "../utils/canvasUtils";
+import { fitCanvasContentToView, setupCanvas } from "../utils/canvasUtils";
 import {
   createNode,
   drawPartnerLine,
@@ -256,6 +256,7 @@ const FamilyTree: React.FC<FamilyTreeProps> = ({ root, options }) => {
         drawChildRelations(root);
         highlightManagerRef.current?.fixLineOverlapping();
         bringNodesToFront(canvas);
+        fitCanvasContentToView(canvas);
         canvas.renderAll();
       } catch (err) {
         console.error("Lỗi khi vẽ cây:", err);

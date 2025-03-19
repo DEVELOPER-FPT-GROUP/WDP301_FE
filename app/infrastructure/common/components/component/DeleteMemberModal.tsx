@@ -1,59 +1,72 @@
-import { Modal, Button, Group, Text } from "@mantine/core";
+import React from "react";
+import { Modal, Text, Group, Button, Alert } from "@mantine/core";
 import { usePutApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import {
   notifyError,
   notifySuccess,
 } from "~/infrastructure/utils/notification/notification";
 
-const DeleteModal = ({ opened, onClose, memberData, refreshTable }: any) => {
+interface DeleteMemberModalProps {
+  opened: boolean;
+  onClose: () => void;
+  memberId: string;
+  memberName: string;
+  onSuccess: () => void;
+}
+
+const DeleteMemberModal: React.FC<DeleteMemberModalProps> = ({
+  opened,
+  onClose,
+  memberId,
+  memberName,
+  onSuccess,
+}) => {
   const deleteMutation = usePutApi({
-    endpoint: `/members/delete/${memberData?.memberId || ""}`,
-    options: { onSuccess: refreshTable },
+    endpoint: `/members/delete/${memberId}`,
+    options: {
+      onSuccess: onSuccess,
+    },
   });
 
   const handleDelete = () => {
-    const isEmptyObject = (obj: object) =>
-      obj && typeof obj === "object" && Object.keys(obj).length === 0;
-
-    if (
-      (memberData?.spouse && !isEmptyObject(memberData.spouse)) || // Chỉ chặn khi spouse có dữ liệu
-      (memberData?.children && memberData.children.length > 0)
-    ) {
-      notifyError({
-        title: "Không thể xóa",
-        message: "Chỉ có thể xóa thành viên không có vợ, chồng hoặc con!",
-      });
-      onClose();
-      return;
-    }
     deleteMutation.mutate(null, {
       onSuccess: () => {
         notifySuccess({
           title: "Thành công",
-          message: `${fullName} đã bị xóa!`,
+          message: `Đã xóa thành viên ${memberName} thành công!`,
         });
+        onSuccess();
         onClose();
       },
-      onError: (err) => {
-        console.log(err);
-        notifyError({ title: "Lỗi", message: "Xóa thất bại!" });
+      onError: (error: any) => {
+        notifyError({
+          title: "Thất bại",
+          message:
+            error?.response?.data?.message ||
+            "Có lỗi xảy ra khi xóa thành viên.",
+        });
       },
     });
   };
-  const fullName = `${memberData?.firstName} ${memberData?.middleName} ${memberData?.lastName}`;
+
   return (
     <Modal
       opened={opened}
       onClose={onClose}
-      title={
-        <Text size="xl" fw={700} c="brown">
-          Xóa thành viên
-        </Text>
-      }
+      title="Xác nhận xóa"
+      centered
+      size="sm"
     >
-      <Text>Bạn có chắc chắn muốn xóa "{fullName}" không?</Text>
-      <Group justify="flex-end">
-        <Button variant="default" onClick={onClose}>
+      <Alert color="red" mb="md">
+        Việc xóa thành viên này sẽ ảnh hưởng đến các thành viên có mối quan hệ
+        với thành viên này. Hãy cân nhắc kỹ trước khi xóa.
+      </Alert>
+      <Text mb="xl">
+        Bạn có chắc chắn muốn xóa thành viên <strong>{memberName}</strong> khỏi
+        cây gia phả?
+      </Text>
+      <Group justify="space-between">
+        <Button variant="light" onClick={onClose}>
           Hủy
         </Button>
         <Button color="red" onClick={handleDelete}>
@@ -64,4 +77,4 @@ const DeleteModal = ({ opened, onClose, memberData, refreshTable }: any) => {
   );
 };
 
-export default DeleteModal;
+export default DeleteMemberModal;

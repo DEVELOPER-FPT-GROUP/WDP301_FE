@@ -40,14 +40,36 @@ export const createNode = async (
 ) => {
   imageUrl = imageUrl || defaultImageUrl;
 
-  // Create card background
-  const cardWidth = nodeRadius * 2;
-  const cardHeight = nodeRadius * 2 + 40; // Extra height for the name
+  // Thiết lập màu sắc dựa trên giới tính
+  let fillColor = "#FFFFFF";
+  let strokeColor = node.gender === "female" ? "#FF9EAA" : "#A0D2EB";
+
+  // Create text object first to calculate its dimensions
+  const textObject = new fabric.Text(text, {
+    fontSize: fontSize,
+    originX: "center",
+    originY: "center",
+    fontWeight: "bold",
+    fill: node.isAlive === false ? "#666666" : "#333333", // Darker text for alive, lighter for deceased
+    textAlign: "center",
+  });
+
+  // Calculate dimensions
+  const textWidth = textObject.width || 0;
+  const textHeight = textObject.height || 0;
+
+  // Calculate card dimensions based on text and image size
+  // Ensure minimum width is at least nodeRadius * 2
+  const cardWidth = Math.max(nodeRadius * 2, textWidth + 20); // 20px padding
+  // Height includes nodeRadius * 2 for the image plus text height plus padding
+  const cardHeight = nodeRadius * 2 + textHeight + 30; // Extra height for the name and padding
+
+  // Create card background with calculated dimensions
   const cardBackground = new fabric.Rect({
     width: cardWidth,
     height: cardHeight,
-    fill: "#FFFFFF",
-    stroke: node.gender === "female" ? "#FF9EAA" : "#A0D2EB",
+    fill: fillColor,
+    stroke: strokeColor,
     strokeWidth: 3,
     rx: 8, // Rounded corners
     ry: 8, // Rounded corners
@@ -77,6 +99,13 @@ export const createNode = async (
     originY: "center",
   });
 
+  // Apply grayscale to the image if the person is deceased
+  if (node.isAlive === false) {
+    // Apply grayscale filter to the image
+    imageObject.filters?.push(new fabric.Image.filters.Grayscale());
+    imageObject.applyFilters();
+  }
+
   // Clip image to circle
   const clipPath = new fabric.Circle({
     radius: nodeRadius * 0.9,
@@ -91,16 +120,10 @@ export const createNode = async (
     clipPath: clipPath,
   });
 
-  // Create text
-  const textObject = new fabric.Text(text, {
-    fontSize: fontSize,
-    originX: "center",
-    originY: "center",
-    fontWeight: "bold",
-    top: cardHeight / 2 - 20, // Position near bottom of card
-    fill: "#333333",
-    textAlign: "center",
-    width: cardWidth - 10,
+  // Update text width and position
+  textObject.set({
+    width: cardWidth - 10, // Make text fit within card width with some margin
+    top: cardHeight / 2 - textHeight / 2 - 10, // Position near bottom of card, adjusted for text height
   });
 
   // Create the node group
@@ -112,6 +135,11 @@ export const createNode = async (
     nodeData: node,
     hoverCursor: "pointer",
   });
+
+  // Set lower opacity for the entire card if the person is deceased
+  if (node.isAlive === false) {
+    group.set({ opacity: 0.7 });
+  }
 
   return group;
 };

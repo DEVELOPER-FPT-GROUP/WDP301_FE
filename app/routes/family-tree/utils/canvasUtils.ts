@@ -160,3 +160,68 @@ export const setupCanvas = (canvas: fabric.Canvas) => {
     this.isDragging = false;
   });
 };
+
+export const fitCanvasContentToView = (canvas: fabric.Canvas) => {
+  if (!canvas) return;
+
+  // Get all objects
+  const objects = canvas.getObjects();
+  if (objects.length === 0) return;
+
+  // Calculate the bounding box of all objects
+  let left = Infinity,
+    top = Infinity,
+    right = -Infinity,
+    bottom = -Infinity;
+
+  objects.forEach((obj) => {
+    const bbox = obj.getBoundingRect(true, true);
+    left = Math.min(left, bbox.left);
+    top = Math.min(top, bbox.top);
+    right = Math.max(right, bbox.left + bbox.width);
+    bottom = Math.max(bottom, bbox.top + bbox.height);
+  });
+
+  // Add padding
+  const padding = 50;
+  left -= padding;
+  top -= padding;
+  right += padding;
+  bottom += padding;
+
+  // Calculate dimensions
+  const width = right - left;
+  const height = bottom - top;
+
+  // Calculate zoom to fit
+  const canvasWidth = canvas.getWidth();
+  const canvasHeight = canvas.getHeight();
+  const zoomX = canvasWidth / width;
+  const zoomY = canvasHeight / height;
+  let zoom = Math.min(zoomX, zoomY);
+
+  // Apply limits to zoom
+  zoom = Math.min(Math.max(zoom, 0.1), 1.0);
+
+  // Calculate center point
+  const centerX = (left + right) / 2;
+  const centerY = (top + bottom) / 2;
+
+  // Reset viewportTransform first
+  canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+  // Apply zoom
+  canvas.setZoom(zoom);
+
+  // Center the content
+  const vpCenter = canvas.getCenter();
+
+  canvas.absolutePan(
+    new fabric.Point(
+      centerX * zoom - vpCenter.left,
+      centerY * zoom - vpCenter.top
+    )
+  );
+
+  canvas.requestRenderAll();
+};

@@ -72,17 +72,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       </AppShell.Header>
       <AppShell.Navbar p="md">
         <MenuItemsRenderer
-          items={role !== "admin" ? userMenuKeys : adminMenuKeys}
+          items={role === "family_member" ? userMenuKeys : adminMenuKeys}
           userRoles={[]}
         />
       </AppShell.Navbar>
-      <AppShell.Main
-        style={{
-          height: "calc(100vh - 60px)",
-        }}
-      >
-        {children}
-      </AppShell.Main>
+      <AppShell.Main>{children}</AppShell.Main>
     </AppShell>
   );
 };
