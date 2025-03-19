@@ -86,13 +86,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           userRoles={[]}
         />
       </AppShell.Navbar>
-      <AppShell.Main
-        style={{
-          height: "calc(100vh - 60px)",
-        }}
-      >
-        {children}
-      </AppShell.Main>
+      <AppShell.Main>{children}</AppShell.Main>
     </AppShell>
   );
 };

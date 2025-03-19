@@ -1,53 +1,108 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { TableComponent } from "./components/Table";
-import { AppShell, Group, Stack, Title } from "@mantine/core";
+import {
+  AppShell,
+  Group,
+  Stack,
+  Title,
+  Loader,
+  Center,
+  Text,
+} from "@mantine/core";
 import DeleteMemberModal from "../../infrastructure/common/components/component/DeleteMemberModal";
 import EditDetailMemberModal from "../../infrastructure/common/components/component/EditDetailMemberModal";
 import RestoreMemberModal from "./components/RestoreMemberDeleted";
-import { Constants } from "~/infrastructure/core/constants";
-import { jwtDecode } from "jwt-decode";
-export const meta = () => [{ title: "Quản lý thành viên " }];
-const route = () => {
+import CreateFamilyLeaderForm from "../../infrastructure/common/components/component/CreateFamilyLeaderForm";
+import { getDataFromToken } from "~/infrastructure/utils/common";
+import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
+
+export const meta = () => [{ title: "Quản lý thành viên" }];
+
+const Route = () => {
   const [selectedData, setSelectedData] = useState<any>(null);
-  const [editmodalOpened, setEditModalOpened] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedMemberName, setSelectedMemberName] = useState<string | null>(
+    null
+  );
+  const [editModalOpened, setEditModalOpened] = useState(false);
   const [deleteMemberModalOpened, setDeleteMemberModalOpened] = useState(false);
-  const [RestoreMemberModalOpened, setRestoreMemberModalOpened] =
+  const [restoreMemberModalOpened, setRestoreMemberModalOpened] =
     useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [familyId, setFamilyId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [memberData, setMemberData] = useState<any[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
-  const handleDelete = async (data: any) => {
-    setSelectedData(data);
+  // Lấy familyId từ token
+  useEffect(() => {
+    const token = getDataFromToken();
+    if (token?.familyId) {
+      setFamilyId(token.familyId);
+    } else {
+      console.error("Không lấy được familyId từ token!");
+    }
+  }, []);
+
+  // Fetch data with pagination
+  const endpoint = familyId ? `members/family/${familyId}/search` : "";
+  const { data, isLoading, isFetching } = useGetApi({
+    queryKey: ["member", currentPage, perPage, refreshKey, familyId],
+    endpoint: endpoint,
+    // Fixed limit to 10 items per page as requested
+    queryParams: { page: currentPage, limit: perPage },
+  });
+
+  // Update local state when data changes
+  useEffect(() => {
+    if (data?.data) {
+      setMemberData(data.data.items || []);
+      setTotalItems(data.data.totalItems || 0);
+      setDataLoaded(true);
+    }
+  }, [data]);
+
+  const handleDelete = useCallback((data: any) => {
+    setSelectedMemberId(data.memberId);
+    setSelectedMemberName(
+      `${data.firstName || ""} ${data.middleName || ""} ${
+        data.lastName || ""
+      }`.trim()
+    );
     setDeleteMemberModalOpened(true);
-  };
+  }, []);
 
-  const handleEdit = (data: any) => {
-    setSelectedData(data);
+  const handleEdit = useCallback((data: any) => {
+    setSelectedMemberId(data.memberId);
     setEditModalOpened(true);
-  };
+  }, []);
 
-  const handleRestore = (data: any) => {
+  const handleRestore = useCallback((data: any) => {
     setSelectedData(data);
     setRestoreMemberModalOpened(true);
+  }, []);
+
+  const refreshTable = useCallback(() => {
+    setRefreshKey((prev) => prev + 1);
+  }, []);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
-  const getFamilyIdFromToken = () => {
-    const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
-
-    if (!token) return null;
-
-    try {
-      const decoded: any = jwtDecode(token);
-      console.log(decoded);
-      return decoded.familyId; // 🛠️ Trích xuất memberId từ payload
-    } catch (error) {
-      console.error("Lỗi khi giải mã token:", error);
-      return null;
-    }
+  const handlePerPageChange = (value: number) => {
+    setPerPage(value);
+    setCurrentPage(1); // Reset to first page when changing items per page
   };
-  const refreshTable = () => setRefreshKey((prev) => prev + 1);
-  const familyId = getFamilyIdFromToken();
+
+  const handleFamilyLeaderCreated = () => {
+    refreshTable(); // Refresh the data after creating a family leader
+  };
+
   const columns = [
-    { key: "firstName", label: "Họ " },
+    { key: "firstName", label: "Họ" },
     { key: "middleName", label: "Tên đệm" },
     { key: "lastName", label: "Tên" },
   ];
@@ -61,28 +116,74 @@ const route = () => {
           </Title>
         </Group>
       </Stack>
-      <TableComponent
-        key={refreshKey}
-        columns={columns}
-        endpoint={`members/get-members-in-family/${familyId}`}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onRestore={handleRestore}
-      />
-      <EditDetailMemberModal
-        opened={editmodalOpened}
-        onClose={() => setEditModalOpened(false)}
-        memberData={selectedData}
-        refreshTable={refreshTable}
-      />
+
+      {/* Check for familyId before rendering content */}
+      {!familyId ? (
+        <p style={{ color: "red", textAlign: "center" }}>
+          Không tìm thấy ID dòng họ! Vui lòng đăng nhập lại.
+        </p>
+      ) : isLoading && !dataLoaded ? (
+        <Center py="xl">
+          <Loader />
+        </Center>
+      ) : dataLoaded && memberData.length === 0 ? (
+        /* Only show Create Family Leader Form when there are no members */
+        <Center style={{ width: "100%", height: "70vh" }}>
+          <div
+            style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}
+            className="mt-20"
+          >
+            <Text mt="xl" mb="xl" size="xl" c="red" fw={500}>
+              Bạn cần tạo thông tin trưởng họ để bắt đầu quản lý thành viên dòng
+              họ
+            </Text>
+            <CreateFamilyLeaderForm
+              onSuccess={handleFamilyLeaderCreated}
+              familyId={familyId}
+            />
+          </div>
+        </Center>
+      ) : (
+        /* Show table when there are members */
+        <TableComponent
+          key={refreshKey}
+          columns={columns}
+          data={memberData || []}
+          isLoading={isLoading || isFetching}
+          totalItems={totalItems}
+          currentPage={currentPage}
+          perPage={perPage}
+          onPageChange={handlePageChange}
+          onPerPageChange={handlePerPageChange}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onRestore={handleRestore}
+        />
+      )}
+
+      {/* Only render the EditDetailMemberModal when selectedMemberId exists */}
+      {selectedMemberId && (
+        <EditDetailMemberModal
+          opened={editModalOpened}
+          onClose={() => {
+            setEditModalOpened(false);
+            setSelectedMemberId(null);
+          }}
+          memberId={selectedMemberId}
+          refreshState={refreshTable}
+        />
+      )}
+
       <DeleteMemberModal
         opened={deleteMemberModalOpened}
         onClose={() => setDeleteMemberModalOpened(false)}
-        memberData={selectedData}
-        refreshTable={refreshTable}
+        memberId={selectedMemberId || ""}
+        memberName={selectedMemberName || ""}
+        onSuccess={refreshTable}
       />
+
       <RestoreMemberModal
-        opened={RestoreMemberModalOpened}
+        opened={restoreMemberModalOpened}
         onClose={() => setRestoreMemberModalOpened(false)}
         memberData={selectedData}
         refreshTable={refreshTable}
@@ -91,4 +192,4 @@ const route = () => {
   );
 };
 
-export default route;
+export default Route;
