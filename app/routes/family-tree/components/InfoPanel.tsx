@@ -216,8 +216,7 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
                 )}
 
                 {onDeleteNode &&
-                  node.gender !== "male" &&
-                  node.generation !== 0 && (
+                  !(node.gender === "male" && node.generation === 0) && (
                     <Menu.Item
                       color="red"
                       leftSection={<IconTrash size={16} />}

@@ -29,6 +29,7 @@ import {
   notifyError,
   notifySuccess,
 } from "~/infrastructure/utils/notification/notification";
+import ImageSelectionModal from "./ImageSelectionModal"; // Import component mới
 
 // Define types based on the API response structure
 interface MemberData {
@@ -96,13 +97,43 @@ interface AddChildModalProps {
   onClose: () => void;
   parentId: string; // ID của cha/mẹ
   onSuccess: () => void;
-  name: string; // Tên của cha/mẹ // ID của quan hệ gia đình nếu cần
+  name: string; // Tên của cha/mẹ
 }
 
 interface ImagePreview {
   url: string;
   file: File;
   isNew: boolean;
+}
+
+interface MediaItem {
+  ownerId: string;
+  ownerType: string;
+  url: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ApiResponse {
+  statusCode: number;
+  message: string;
+  data: {
+    memberId: string;
+    familyId: string;
+    // Các trường khác...
+    media: MediaItem[];
+  };
+}
+
+// Định nghĩa interface cho cấu trúc dữ liệu mediaData
+interface MediaSelectionResult {
+  id: string;
+  url: string;
+  status: "avatar" | "label" | "dump";
+  memberId?: string;
 }
 
 const AddChildModal: React.FC<AddChildModalProps> = ({
@@ -122,6 +153,13 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
   // States for managing image - changed to single image
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // State để quản lý hiển thị modal chọn ảnh
+  const [showImageSelection, setShowImageSelection] = useState(false);
+  const [apiResponseData, setApiResponseData] = useState<
+    ApiResponse["data"] | null
+  >(null);
+  const [familyId, setFamilyId] = useState<string | null>(null);
 
   // Function to handle image upload - updated for single image
   const handleImageUpload = (file: File | null) => {
@@ -163,6 +201,11 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
       // Store the parent's gender
       setParentGender(parent.gender);
 
+      // Lưu familyId để dùng cho modal chọn ảnh
+      if (parent.familyId) {
+        setFamilyId(parent.familyId);
+      }
+
       const options: { value: string; label: string }[] = [];
 
       // Check if spouses array exists
@@ -201,9 +244,79 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
   const createChildMutation = usePostApi({
     endpoint: "members/add-child",
     options: {
-      onSuccess: () => {
-        onSuccess();
-        resetForm();
+      onSuccess: (response) => {
+        console.log(
+          "Backend response when adding child successfully:",
+          response
+        );
+
+        // ===== BẮT ĐẦU: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
+
+        // Tạo một bản sao của response.data để không ảnh hưởng đến dữ liệu gốc
+        // const mockData = { ...response.data };
+
+        // // Tạo một mảng media giả định với nhiều ảnh
+        // mockData.media = [
+        //   // Giữ lại media gốc nếu có
+        //   ...(response.data.media || []),
+
+        //   // Thêm các ảnh giả định
+        //   {
+        //     ownerId: "mock-media-1",
+        //     ownerType: "Member",
+        //     url: "https://res.cloudinary.com/dhfatqx0l/image/upload/v1742665011/uploads/lxqunmukpm49x0hca2vx.png",
+        //     fileName: "mock1.png",
+        //     mimeType: "image/png",
+        //     size: 330023,
+        //     createdAt: "2025-03-22T17:36:52.325Z",
+        //     updatedAt: "2025-03-22T17:36:52.325Z",
+        //   },
+        //   {
+        //     ownerId: "mock-media-2",
+        //     ownerType: "Member",
+        //     url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574",
+        //     fileName: "mock2.jpg",
+        //     mimeType: "image/jpeg",
+        //     size: 250000,
+        //     createdAt: "2025-03-22T17:36:52.325Z",
+        //     updatedAt: "2025-03-22T17:36:52.325Z",
+        //   },
+        //   {
+        //     ownerId: "mock-media-3",
+        //     ownerType: "Member",
+        //     url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961",
+        //     fileName: "mock3.jpg",
+        //     mimeType: "image/jpeg",
+        //     size: 280000,
+        //     createdAt: "2025-03-22T17:36:52.325Z",
+        //     updatedAt: "2025-03-22T17:36:52.325Z",
+        //   },
+        // ];
+
+        // // Sử dụng dữ liệu giả thay vì dữ liệu thật
+        // setApiResponseData(mockData);
+        // setShowImageSelection(true);
+
+        // ===== KẾT THÚC: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
+
+        /* Ghi chú: Đã comment đoạn code logic thực tế, bỏ comment sau khi test xong
+        
+        // Kiểm tra nếu có nhiều ảnh trong response
+     
+        */
+        if (response?.data?.media && response.data.media.length > 1) {
+          setApiResponseData(response.data);
+          setShowImageSelection(true);
+        } else {
+          // Nếu không có nhiều ảnh, đóng modal và thông báo thành công
+          notifySuccess({
+            title: "Thành công",
+            message: "Đã thêm con thành công!",
+          });
+          setLoading(false);
+          handleFinalClose();
+        }
+        // setLoading(false);
       },
     },
   });
@@ -217,11 +330,38 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
     setPreviewImage(null);
     setUploadedFile(null);
     setError(null);
+    setShowImageSelection(false);
+    setApiResponseData(null);
   };
 
   const handleClose = () => {
+    // Xóa điều kiện kiểm tra showImageSelection để luôn cho phép đóng modal
+    // if (showImageSelection) return; // Xóa dòng này
+
     resetForm();
     onClose();
+  };
+
+  const handleFinalClose = () => {
+    resetForm();
+    onSuccess();
+    onClose();
+  };
+
+  // Thêm hàm mới để xử lý quay lại từ màn hình chọn ảnh
+  const handleImageSelectionCancel = () => {
+    // Đặt lại trạng thái modal chọn ảnh
+    setShowImageSelection(false);
+    setApiResponseData(null);
+
+    // Hiển thị thông báo
+    notifySuccess({
+      title: "Thành công",
+      message: "Đã thêm thành công nhưng bỏ qua xử lý ảnh!",
+    });
+
+    // Đóng modal
+    handleFinalClose();
   };
 
   const handleSubmit = async (values: typeof form.values) => {
@@ -260,15 +400,6 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
 
       // Sử dụng mutation để gửi request
       createChildMutation.mutate(formData, {
-        onSuccess: (data) => {
-          console.log("Backend response when adding child successfully:", data);
-          notifySuccess({
-            title: "Thành công",
-            message: "Đã thêm con thành công!",
-          });
-          setLoading(false);
-          handleClose();
-        },
         onError: (error: any) => {
           setError(
             error?.response?.data?.message || "Có lỗi xảy ra khi thêm con"
@@ -287,6 +418,16 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
       console.error("Error adding child:", err);
       setLoading(false);
     }
+  };
+
+  // Xử lý khi người dùng hoàn thành việc chọn ảnh
+  const handleImageSelectionComplete = (mediaData: MediaSelectionResult[]) => {
+    console.log("Selected media data:", mediaData);
+    notifySuccess({
+      title: "Thành công",
+      message: "Đã thêm con thành công và xử lý ảnh!",
+    });
+    handleFinalClose();
   };
 
   // Determine the label for the spouse selection based on parent gender
@@ -327,6 +468,32 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
       }
     };
   }, []);
+
+  // Nếu đang hiển thị modal chọn ảnh
+  if (showImageSelection && apiResponseData) {
+    return (
+      <Modal
+        opened={opened}
+        onClose={handleClose} // Sử dụng handleClose để luôn cho phép đóng modal
+        title={
+          <Text size="xl" fw={700} c="brown">
+            Xử lý ảnh cho thành viên mới
+          </Text>
+        }
+        centered
+        size="xl"
+      >
+        <ImageSelectionModal
+          media={apiResponseData.media}
+          newMemberId={apiResponseData.memberId}
+          familyId={familyId}
+          originalImage={previewImage}
+          onComplete={handleImageSelectionComplete}
+          onCancel={handleImageSelectionCancel} // Sử dụng hàm mới để xử lý khi người dùng hủy
+        />
+      </Modal>
+    );
+  }
 
   return (
     <Modal

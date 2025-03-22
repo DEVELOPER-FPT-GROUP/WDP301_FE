@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   TextInput,
   Button,
@@ -15,6 +15,8 @@ import {
   Image,
   SimpleGrid,
   ActionIcon,
+  Modal,
+  Text,
 } from "@mantine/core";
 import { IconX, IconUpload } from "@tabler/icons-react";
 import { DateInput } from "@mantine/dates";
@@ -26,6 +28,7 @@ import {
   notifyError,
   notifySuccess,
 } from "~/infrastructure/utils/notification/notification";
+import ImageSelectionModal from "./ImageSelectionModal"; // Import ImageSelectionModal
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -60,6 +63,39 @@ interface CreateFamilyLeaderFormProps {
   familyId?: string | null;
 }
 
+// Interfaces cho ImageSelectionModal
+interface MediaItem {
+  ownerId: string;
+  ownerType: string;
+  url: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface MediaSelectionResult {
+  id: string;
+  url: string;
+  status: "avatar" | "label" | "dump";
+  memberId?: string;
+}
+
+interface ApiResponse {
+  statusCode: number;
+  message: string;
+  data: {
+    memberId: string;
+    familyId: string;
+    // Các trường khác...
+    media: MediaItem[];
+  };
+}
+
+// Current Date and Time: 2025-03-22 19:10:18
+// User: HE171216
+
 const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
   onSuccess,
   familyId,
@@ -70,6 +106,15 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
   // States for managing images
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [previewImages, setPreviewImages] = useState<any>([]);
+
+  // State để quản lý hiển thị modal chọn ảnh
+  const [showImageSelection, setShowImageSelection] = useState(false);
+  const [apiResponseData, setApiResponseData] = useState<
+    ApiResponse["data"] | null
+  >(null);
+  const [selectedLeaderMemberId, setSelectedLeaderMemberId] = useState<
+    string | null
+  >(null);
 
   // Function to handle image upload
   const handleImageUpload = (files: File[] | null) => {
@@ -111,14 +156,126 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
   const createMutation = usePostApi({
     endpoint: "members/create-family-leader",
     options: {
-      onSuccess: () => {
-        onSuccess();
-        setPreviewImages([]);
-        setUploadedFiles([]);
-        form.reset();
+      onSuccess: (response) => {
+        console.log(
+          "Backend response when creating family leader successfully:",
+          response
+        );
+
+        // ===== BẮT ĐẦU: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
+
+        // Nếu có hơn 1 ảnh được tải lên (Giả lập cho mục đích test)
+        if (uploadedFiles.length > 1) {
+          // Tạo một bản sao của response.data để không ảnh hưởng đến dữ liệu gốc
+          const mockData = { ...response.data };
+
+          // Tạo một mảng media giả định với các ảnh đã tải lên
+          mockData.media = uploadedFiles.map((file, index) => ({
+            ownerId: `mock-media-${index}`,
+            ownerType: "Member",
+            url: previewImages[index].url,
+            fileName: file.name,
+            mimeType: file.type,
+            size: file.size,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }));
+
+          // Lưu memberId của trưởng họ vừa tạo
+          if (response?.data?.memberId) {
+            setSelectedLeaderMemberId(response.data.memberId);
+          }
+
+          // Sử dụng dữ liệu giả thay vì dữ liệu thật
+          setApiResponseData(mockData);
+          setShowImageSelection(true);
+          setLoading(false);
+
+          // ===== KẾT THÚC: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
+        } else {
+          // Nếu không có nhiều ảnh, hoàn thành quy trình bình thường
+          handleCompletionWithoutImageModal();
+        }
+
+        /* Ghi chú: Đã comment đoạn code logic thực tế, bỏ comment sau khi test xong
+        
+        // Kiểm tra nếu có nhiều ảnh trong response
+        if (response?.data?.media && response.data.media.length > 1) {
+          setSelectedLeaderMemberId(response.data.memberId);
+          setApiResponseData(response.data);
+          setShowImageSelection(true);
+          setLoading(false);
+        } else {
+          // Nếu không có nhiều ảnh, đóng form và thông báo thành công
+          handleCompletionWithoutImageModal();
+        }
+        */
       },
     },
   });
+
+  // Xử lý hoàn thành mà không cần hiển thị modal chọn ảnh
+  const handleCompletionWithoutImageModal = () => {
+    notifySuccess({
+      title: "Thành công",
+      message: "Trưởng họ đã được tạo thành công!",
+    });
+    resetFormData();
+    onSuccess();
+  };
+
+  // Xử lý khi người dùng hoàn thành việc chọn ảnh
+  const handleImageSelectionComplete = (mediaData: MediaSelectionResult[]) => {
+    console.log("Selected media data:", mediaData);
+    notifySuccess({
+      title: "Thành công",
+      message: "Trưởng họ đã được tạo thành công và ảnh đã được xử lý!",
+    });
+    resetFormData();
+    onSuccess();
+  };
+
+  // Xử lý khi người dùng hủy quá trình chọn ảnh
+  const handleImageSelectionCancel = () => {
+    setShowImageSelection(false);
+    setApiResponseData(null);
+
+    notifySuccess({
+      title: "Thành công",
+      message: "Trưởng họ đã được tạo thành công nhưng bỏ qua xử lý ảnh!",
+    });
+
+    resetFormData();
+    onSuccess();
+  };
+
+  // Reset form và dữ liệu ảnh
+  const resetFormData = () => {
+    form.reset();
+    // Thu hồi URL để tránh rò rỉ bộ nhớ
+    previewImages.forEach((img: any) => {
+      if (img.url) {
+        URL.revokeObjectURL(img.url);
+      }
+    });
+    setPreviewImages([]);
+    setUploadedFiles([]);
+    setShowImageSelection(false);
+    setApiResponseData(null);
+    setSelectedLeaderMemberId(null);
+    setError(null);
+  };
+
+  // Dọn dẹp object URL khi component unmount
+  useEffect(() => {
+    return () => {
+      previewImages.forEach((img: any) => {
+        if (img.url) {
+          URL.revokeObjectURL(img.url);
+        }
+      });
+    };
+  }, []);
 
   const handleSubmit = async (values: typeof form.values) => {
     setLoading(true);
@@ -159,14 +316,6 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
 
       // Use mutation to send the request instead of fetch
       createMutation.mutate(formData, {
-        onSuccess: () => {
-          // Handle success
-          notifySuccess({
-            title: "Thành công",
-            message: "Trưởng họ đã được tạo thành công!",
-          });
-          setLoading(false);
-        },
         onError: (error: any) => {
           // Handle error
           setError(
@@ -187,6 +336,38 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
       setLoading(false);
     }
   };
+
+  // Nếu đang hiển thị modal chọn ảnh
+  if (showImageSelection && apiResponseData) {
+    return (
+      <Modal
+        opened={true}
+        onClose={handleImageSelectionCancel}
+        title={
+          <Text size="xl" fw={700} c="brown">
+            Xử lý ảnh cho trưởng họ mới
+          </Text>
+        }
+        centered
+        size="xl"
+      >
+        <ImageSelectionModal
+          media={apiResponseData.media}
+          newMemberId={selectedLeaderMemberId || ""}
+          familyId={familyId || null}
+          originalImage={previewImages.length > 0 ? previewImages[0].url : null}
+          onComplete={handleImageSelectionComplete}
+          onCancel={handleImageSelectionCancel}
+          modalType="edit-member"
+          customTexts={{
+            selectAvatarTitle: "Chọn ảnh đại diện cho trưởng họ",
+            selectAvatarDescription:
+              "Vui lòng chọn một ảnh để làm ảnh đại diện cho trưởng họ mới.",
+          }}
+        />
+      </Modal>
+    );
+  }
 
   return (
     <Paper p="lg" withBorder radius="md" pos="relative">
