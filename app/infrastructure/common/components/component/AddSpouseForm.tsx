@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   TextInput,
   Button,
@@ -12,7 +12,6 @@ import {
   FileInput,
   Card,
   Image,
-  SimpleGrid,
   ActionIcon,
   Modal,
 } from "@mantine/core";
@@ -75,29 +74,34 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // States for managing images
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [previewImages, setPreviewImages] = useState<any>([]);
+  // States for managing image - đã thay đổi thành một ảnh duy nhất
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  // Function to handle image upload
-  const handleImageUpload = (files: File[] | null) => {
-    if (!files) return;
-    const newPreviewUrls = files.map((file) => ({
-      url: URL.createObjectURL(file),
-      file: file,
-      isNew: true,
-    }));
+  // Function to handle image upload - đã cập nhật cho một ảnh
+  const handleImageUpload = (file: File | null) => {
+    if (!file) {
+      setUploadedFile(null);
+      setPreviewImage(null);
+      return;
+    }
 
-    setPreviewImages((prev: any) => [...prev, ...newPreviewUrls]);
-    setUploadedFiles((prev: File[]) => [...prev, ...files]);
+    // Thu hồi URL trước đó để tránh rò rỉ bộ nhớ
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage);
+    }
+
+    setPreviewImage(URL.createObjectURL(file));
+    setUploadedFile(file);
   };
 
   // Function to handle image removal
-  const handleRemoveImage = (image: any) => {
-    setPreviewImages((prev: any) =>
-      prev.filter((img: any) => img.url !== image.url)
-    );
-    setUploadedFiles((prev) => prev.filter((file) => file !== image.file));
+  const handleRemoveImage = () => {
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage);
+    }
+    setPreviewImage(null);
+    setUploadedFile(null);
   };
 
   const form = useForm({
@@ -127,8 +131,12 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
 
   const resetForm = () => {
     form.reset();
-    setPreviewImages([]);
-    setUploadedFiles([]);
+    // Xóa ảnh
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage);
+    }
+    setPreviewImage(null);
+    setUploadedFile(null);
     setError(null);
   };
 
@@ -161,17 +169,11 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
         }
       });
 
-      // Thêm file ảnh vào formData
-      if (uploadedFiles.length > 0) {
-        uploadedFiles.forEach((file) => {
-          formData.append("files", file);
-        });
+      // Thêm file ảnh vào formData - đã thay đổi thành một file
+      if (uploadedFile) {
+        formData.append("files", uploadedFile);
       }
-      // console.log("formData", formData);
-      console.log("FormData entries:");
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ": " + pair[1]);
-      }
+
       // Sử dụng mutation để gửi request
       createSpouseMutation.mutate(formData, {
         onSuccess: () => {
@@ -208,6 +210,15 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
       setLoading(false);
     }
   };
+
+  // Dọn dẹp object URL khi component unmount
+  useEffect(() => {
+    return () => {
+      if (previewImage) {
+        URL.revokeObjectURL(previewImage);
+      }
+    };
+  }, []);
 
   return (
     <Modal
@@ -309,45 +320,43 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
             {...form.getInputProps("shortSummary")}
           />
 
-          {/* Image upload section */}
+          {/* Phần upload ảnh - đã điều chỉnh cho một ảnh */}
           <FileInput
             label="Ảnh đại diện"
             placeholder="Tải lên ảnh"
             accept="image/png,image/jpeg,image/jpg"
-            multiple
             leftSection={<IconUpload size={16} />}
             onChange={handleImageUpload}
+            value={uploadedFile}
           />
 
-          {/* Image preview section */}
-          {previewImages.length > 0 && (
-            <SimpleGrid cols={3} spacing="md">
-              {previewImages.map((img: any, index: number) => (
-                <Card
-                  key={index}
-                  shadow="sm"
-                  padding="xs"
-                  radius="md"
-                  withBorder
-                >
-                  <ActionIcon
-                    color="red"
-                    variant="light"
-                    size="sm"
-                    style={{ position: "absolute", top: 4, right: 4 }}
-                    onClick={() => handleRemoveImage(img)}
-                  >
-                    <IconX size={16} />
-                  </ActionIcon>
-                  <Image
-                    src={img.url}
-                    alt={`Hình ảnh ${index + 1}`}
-                    radius="md"
-                    height={150}
-                  />
-                </Card>
-              ))}
-            </SimpleGrid>
+          {/* Phần xem trước ảnh - đã điều chỉnh cho một ảnh, căn lề trái */}
+          {previewImage && (
+            <Card
+              shadow="sm"
+              padding="xs"
+              radius="md"
+              withBorder
+              w={150}
+              style={{ marginLeft: 0 }}
+            >
+              <ActionIcon
+                color="red"
+                variant="light"
+                size="sm"
+                style={{ position: "absolute", top: 4, right: 4 }}
+                onClick={handleRemoveImage}
+              >
+                <IconX size={16} />
+              </ActionIcon>
+              <Image
+                src={previewImage}
+                alt="Ảnh đại diện"
+                radius="md"
+                height={120}
+                fit="contain"
+              />
+            </Card>
           )}
 
           <Group justify="flex-end" mt="md">

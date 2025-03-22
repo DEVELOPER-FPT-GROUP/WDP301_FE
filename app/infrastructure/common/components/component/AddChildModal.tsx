@@ -12,7 +12,6 @@ import {
   FileInput,
   Card,
   Image,
-  SimpleGrid,
   ActionIcon,
   Modal,
   Select,
@@ -120,27 +119,34 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
   >([]);
   const [parentGender, setParentGender] = useState<string | null>(null);
 
-  // States for managing images
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [previewImages, setPreviewImages] = useState<ImagePreview[]>([]);
+  // States for managing image - changed to single image
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  // Function to handle image upload
-  const handleImageUpload = (files: File[] | null) => {
-    if (!files) return;
-    const newPreviewUrls = files.map((file) => ({
-      url: URL.createObjectURL(file),
-      file: file,
-      isNew: true,
-    }));
+  // Function to handle image upload - updated for single image
+  const handleImageUpload = (file: File | null) => {
+    if (!file) {
+      setUploadedFile(null);
+      setPreviewImage(null);
+      return;
+    }
 
-    setPreviewImages((prev) => [...prev, ...newPreviewUrls]);
-    setUploadedFiles((prev) => [...prev, ...files]);
+    // Revoke previous object URL to prevent memory leaks
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage);
+    }
+
+    setPreviewImage(URL.createObjectURL(file));
+    setUploadedFile(file);
   };
 
   // Function to handle image removal
-  const handleRemoveImage = (image: ImagePreview) => {
-    setPreviewImages((prev) => prev.filter((img) => img.url !== image.url));
-    setUploadedFiles((prev) => prev.filter((file) => file !== image.file));
+  const handleRemoveImage = () => {
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage);
+    }
+    setPreviewImage(null);
+    setUploadedFile(null);
   };
 
   // Fetch parent details to get spouse information
@@ -204,8 +210,12 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
 
   const resetForm = () => {
     form.reset();
-    setPreviewImages([]);
-    setUploadedFiles([]);
+    // Clear image
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage);
+    }
+    setPreviewImage(null);
+    setUploadedFile(null);
     setError(null);
   };
 
@@ -243,21 +253,15 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
         }
       });
 
-      // Thêm file ảnh vào formData
-      if (uploadedFiles.length > 0) {
-        uploadedFiles.forEach((file) => {
-          formData.append("files", file);
-        });
-      }
-
-      console.log("FormData entries:");
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ": " + pair[1]);
+      // Thêm file ảnh vào formData - changed to single file
+      if (uploadedFile) {
+        formData.append("files", uploadedFile);
       }
 
       // Sử dụng mutation để gửi request
       createChildMutation.mutate(formData, {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          console.log("Backend response when adding child successfully:", data);
           notifySuccess({
             title: "Thành công",
             message: "Đã thêm con thành công!",
@@ -314,6 +318,15 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
     }
     return "Không có người phối ngẫu. Hãy thêm người phối ngẫu trước khi thêm con.";
   };
+
+  // Clean up object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      if (previewImage) {
+        URL.revokeObjectURL(previewImage);
+      }
+    };
+  }, []);
 
   return (
     <Modal
@@ -451,45 +464,43 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
             {...form.getInputProps("shortSummary")}
           />
 
-          {/* Image upload section */}
+          {/* Image upload section - modified for single image */}
           <FileInput
             label="Ảnh đại diện"
             placeholder="Tải lên ảnh"
             accept="image/png,image/jpeg,image/jpg"
-            multiple
             leftSection={<IconUpload size={16} />}
             onChange={handleImageUpload}
+            value={uploadedFile}
           />
 
-          {/* Image preview section */}
-          {previewImages.length > 0 && (
-            <SimpleGrid cols={3} spacing="md">
-              {previewImages.map((img, index) => (
-                <Card
-                  key={index}
-                  shadow="sm"
-                  padding="xs"
-                  radius="md"
-                  withBorder
-                >
-                  <ActionIcon
-                    color="red"
-                    variant="light"
-                    size="sm"
-                    style={{ position: "absolute", top: 4, right: 4 }}
-                    onClick={() => handleRemoveImage(img)}
-                  >
-                    <IconX size={16} />
-                  </ActionIcon>
-                  <Image
-                    src={img.url}
-                    alt={`Hình ảnh ${index + 1}`}
-                    radius="md"
-                    height={150}
-                  />
-                </Card>
-              ))}
-            </SimpleGrid>
+          {/* Image preview section - modified to align left instead of center */}
+          {previewImage && (
+            <Card
+              shadow="sm"
+              padding="xs"
+              radius="md"
+              withBorder
+              w={150}
+              style={{ marginLeft: 0 }}
+            >
+              <ActionIcon
+                color="red"
+                variant="light"
+                size="sm"
+                style={{ position: "absolute", top: 4, right: 4 }}
+                onClick={handleRemoveImage}
+              >
+                <IconX size={16} />
+              </ActionIcon>
+              <Image
+                src={previewImage}
+                alt="Ảnh đại diện"
+                radius="md"
+                height={120}
+                fit="contain"
+              />
+            </Card>
           )}
 
           <Group justify="flex-end" mt="md">

@@ -48,6 +48,7 @@ const TreePage: React.FC = () => {
     }
   }, []);
 
+  // Only call the API if we have a familyId
   const { data, isSuccess, isLoading, refetch } = useGetApi({
     queryKey: ["family-tree", dataToken.familyId],
     endpoint: "members/get-members-in-family/:id",
@@ -150,6 +151,56 @@ const TreePage: React.FC = () => {
     return addOnClick(formattedRoot);
   }, [formattedRoot]);
 
+  // Thêm useEffect để cập nhật selectedNode khi dữ liệu thay đổi
+  useEffect(() => {
+    if (isSuccess && data && data.data && selectedNode) {
+      // Hàm tìm node trong cây mới dựa theo ID của node đã chọn
+      const findNodeById = (node: any, id: any): any => {
+        if (node.id === id) return node;
+
+        if (node.relationships) {
+          for (const rel of node.relationships) {
+            // Tìm trong partner
+            if (rel.partner && rel.partner.id === id) {
+              return rel.partner;
+            }
+
+            // Tìm trong children
+            if (rel.children) {
+              for (const child of rel.children) {
+                const found = findNodeById(child, id);
+                if (found) return found;
+              }
+            }
+          }
+        }
+        return null;
+      };
+
+      // Tìm và cập nhật lại selectedNode từ dữ liệu mới
+      const updatedNode = findNodeById(data.data, selectedNode.id);
+      if (updatedNode) {
+        // Process the updated node to ensure it has the same structure
+        const processNode = (node: any): Node => {
+          const processedNode = { ...node };
+
+          // Convert media to image if it exists and has elements
+          if (
+            node.media &&
+            Array.isArray(node.media) &&
+            node.media.length > 0
+          ) {
+            processedNode.image = node.media[0];
+          }
+
+          return processedNode;
+        };
+
+        setSelectedNode(processNode(updatedNode));
+      }
+    }
+  }, [data, isSuccess, selectedNode?.id]);
+
   const handleFamilyLeaderCreated = () => {
     // After creating a family leader, refresh the data
     refetch();
@@ -214,7 +265,7 @@ const TreePage: React.FC = () => {
     [canvasSize]
   );
 
-  // If there's no familyId, we need to create a family leader
+  // If there's no familyId, we need to notify the user
   if (!dataToken.familyId) {
     return (
       <div style={{ padding: "2rem" }}>
@@ -229,7 +280,7 @@ const TreePage: React.FC = () => {
 
   return (
     <div ref={canvasContainerRef} style={{ width: "100%", height: "100vh" }}>
-      {/* Chỉ hiển thị tiêu đề "Cây gia phả" khi có dữ liệu */}
+      {/* Chỉ hiển thị tiêu đề khi có dữ liệu */}
       {enhancedRoot && (
         <Group justify="space-between" align="center" mb="md">
           <Group>
@@ -244,11 +295,12 @@ const TreePage: React.FC = () => {
           </Button>
         </Group>
       )}
+
       {isLoading ? (
         <Center style={{ width: "100%", height: "70vh" }}>
           <Loader size="xl" />
         </Center>
-      ) : !enhancedRoot ? (
+      ) : isSuccess && data && data.data === null ? (
         <Center style={{ width: "100%", height: "70vh" }}>
           <div
             style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}
@@ -265,27 +317,26 @@ const TreePage: React.FC = () => {
             />
           </div>
         </Center>
-      ) : (
+      ) : enhancedRoot ? (
         <FamilyTree root={enhancedRoot} options={treeOptions} />
-      )}
+      ) : null}
+
       <DownloadModal
         isOpen={isModalOpen}
         onClose={closeModal}
         canvasId="canvas"
       />
-      {isInfoPanelOpen &&
-        selectedNode &&
-        dataToken.role !== "family_member" && (
-          <InfoPanel
-            node={selectedNode}
-            onClose={closeInfoPanel}
-            onAddSpouse={handleAddSpouse}
-            onAddChild={handleAddChild}
-            onDeleteNode={handleDeleteNode}
-            onEditNode={handleEditNode}
-            onViewNode={handleViewNode}
-          />
-        )}
+      {isInfoPanelOpen && selectedNode && (
+        <InfoPanel
+          node={selectedNode}
+          onClose={closeInfoPanel}
+          onAddSpouse={handleAddSpouse}
+          onAddChild={handleAddChild}
+          onDeleteNode={handleDeleteNode}
+          onEditNode={handleEditNode}
+          onViewNode={handleViewNode}
+        />
+      )}
       {nodeForAddSpouse && (
         <AddSpouseModal
           opened={isAddSpouseModalOpen}

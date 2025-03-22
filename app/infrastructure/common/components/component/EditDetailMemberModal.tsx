@@ -121,6 +121,11 @@ const EditDetailMemberModal: React.FC<EditDetailMemberModalProps> = ({
   const handleImageUpload = (file: File | null) => {
     if (!file) return;
 
+    // Thu hồi URL trước đó để tránh rò rỉ bộ nhớ
+    if (previewImage && !previewImage.isExisting) {
+      URL.revokeObjectURL(previewImage.url);
+    }
+
     const url = URL.createObjectURL(file);
 
     // Replace any existing preview with the new one
@@ -150,6 +155,9 @@ const EditDetailMemberModal: React.FC<EditDetailMemberModalProps> = ({
     if (previewImage?.isExisting && previewImage.id) {
       setDeleteImageId(previewImage.id);
       setHasExistingImage(false);
+    } else if (!previewImage?.isExisting && previewImage?.url) {
+      // Thu hồi URL để tránh rò rỉ bộ nhớ
+      URL.revokeObjectURL(previewImage.url);
     }
 
     // Clear the preview
@@ -203,12 +211,25 @@ const EditDetailMemberModal: React.FC<EditDetailMemberModalProps> = ({
   useEffect(() => {
     if (!opened) {
       form.reset();
+      // Thu hồi URL trước khi xóa
+      if (previewImage && !previewImage.isExisting && previewImage.url) {
+        URL.revokeObjectURL(previewImage.url);
+      }
       setUploadedFile(null);
       setPreviewImage(null);
       setDeleteImageId(null);
       setHasExistingImage(false);
     }
   }, [opened]);
+
+  // Dọn dẹp URL khi component unmount
+  useEffect(() => {
+    return () => {
+      if (previewImage && !previewImage.isExisting && previewImage.url) {
+        URL.revokeObjectURL(previewImage.url);
+      }
+    };
+  }, []);
 
   const editMemberApi = usePutApi({
     endpoint: `/members/update/${memberId || ""}`,
@@ -248,10 +269,10 @@ const EditDetailMemberModal: React.FC<EditDetailMemberModalProps> = ({
     }
 
     // Log FormData content for debugging
-    console.log("FormData entries:");
-    for (let pair of formData.entries()) {
-      console.log(pair[0] + ": " + pair[1]);
-    }
+    // console.log("FormData entries:");
+    // for (let pair of formData.entries()) {
+    //   console.log(pair[0] + ": " + pair[1]);
+    // }
 
     editMemberApi.mutate(formData, {
       onSuccess: () => {
@@ -260,6 +281,10 @@ const EditDetailMemberModal: React.FC<EditDetailMemberModalProps> = ({
           message: `Chỉnh sửa ${fullName} thành công!`,
         });
         form.reset();
+        // Thu hồi URL trước khi xóa
+        if (previewImage && !previewImage.isExisting && previewImage.url) {
+          URL.revokeObjectURL(previewImage.url);
+        }
         setUploadedFile(null);
         setPreviewImage(null);
         setDeleteImageId(null);
@@ -305,9 +330,16 @@ const EditDetailMemberModal: React.FC<EditDetailMemberModalProps> = ({
               onChange={handleImageUpload}
             />
 
-            {/* Image preview section - now only shows a single image */}
+            {/* Image preview section - đã cập nhật kích thước và căn lề trái */}
             {previewImage && (
-              <Card shadow="sm" padding="xs" radius="md" withBorder>
+              <Card
+                shadow="sm"
+                padding="xs"
+                radius="md"
+                withBorder
+                w={150}
+                style={{ marginLeft: 0 }}
+              >
                 <ActionIcon
                   color="red"
                   variant="light"
@@ -321,7 +353,13 @@ const EditDetailMemberModal: React.FC<EditDetailMemberModalProps> = ({
                   src={previewImage.url}
                   alt="Ảnh đại diện"
                   radius="md"
-                  height={200}
+                  height={120}
+                  fit="contain"
+                  style={
+                    !form.values.isAlive
+                      ? { filter: "grayscale(70%) opacity(0.7)" }
+                      : undefined
+                  }
                 />
               </Card>
             )}

@@ -13,6 +13,7 @@ import DeleteMemberModal from "../../infrastructure/common/components/component/
 import EditDetailMemberModal from "../../infrastructure/common/components/component/EditDetailMemberModal";
 import RestoreMemberModal from "./components/RestoreMemberDeleted";
 import CreateFamilyLeaderForm from "../../infrastructure/common/components/component/CreateFamilyLeaderForm";
+import ExportAccountsButton from "./components/ExportAccountsButton";
 import { getDataFromToken } from "~/infrastructure/utils/common";
 import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 
@@ -114,6 +115,11 @@ const Route = () => {
           <Title order={2} c="brown">
             Quản lý thành viên dòng họ
           </Title>
+
+          {/* Show export button only when there is member data */}
+          {dataLoaded && memberData.length > 0 && (
+            <ExportAccountsButton memberData={memberData} />
+          )}
         </Group>
       </Stack>
 
@@ -122,11 +128,11 @@ const Route = () => {
         <p style={{ color: "red", textAlign: "center" }}>
           Không tìm thấy ID dòng họ! Vui lòng đăng nhập lại.
         </p>
-      ) : isLoading && !dataLoaded ? (
+      ) : isLoading || isFetching ? (
         <Center py="xl">
           <Loader />
         </Center>
-      ) : dataLoaded && memberData.length === 0 ? (
+      ) : dataLoaded && totalItems === 0 ? (
         /* Only show Create Family Leader Form when there are no members */
         <Center style={{ width: "100%", height: "70vh" }}>
           <div

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Paper,
   Title,
@@ -11,6 +11,7 @@ import {
   ActionIcon,
   Box,
   Menu,
+  Tooltip,
 } from "@mantine/core";
 import {
   IconX,
@@ -21,9 +22,16 @@ import {
   IconEye,
   IconMenu2,
 } from "@tabler/icons-react";
-import { defaultImageUrl } from "../constants/defaults";
+import {
+  defaultImageUrl,
+  defaultMaleImageUrl,
+  defaultFemaleImageUrl,
+} from "../constants/defaults";
 import type { Node } from "../types/node";
-import { formatNormalDate } from "~/infrastructure/utils/common";
+import {
+  formatNormalDate,
+  getDataFromToken,
+} from "~/infrastructure/utils/common";
 
 interface InfoPanelProps {
   node: Node | null;
@@ -45,6 +53,17 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   onViewNode,
 }) => {
   const [menuOpened, setMenuOpened] = useState(false);
+  const dataToken = useMemo(() => {
+    try {
+      const token = getDataFromToken();
+      return token || { familyId: null, role: null };
+    } catch (error) {
+      console.error("Error getting token data:", error);
+      return { familyId: null, role: null };
+    }
+  }, []);
+
+  const isReadOnly = dataToken.role === "family_member";
 
   if (!node) return null;
 
@@ -62,6 +81,13 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   // Determine if we need to show buttons
   const showAddSpouse = !isAlreadyPartner && onAddSpouse;
   const showAddChild = hasMarriedRelationship && onAddChild;
+
+  // Determine default image based on gender
+  const getDefaultImage = () => {
+    if (node.gender === "male") return defaultMaleImageUrl;
+    if (node.gender === "female") return defaultFemaleImageUrl;
+    return defaultImageUrl;
+  };
 
   return (
     <Paper
@@ -96,7 +122,7 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
         {/* Image container with action menu */}
         <Box pos="relative" style={{ width: "fit-content", margin: "0 auto" }}>
           <Image
-            src={node.image || defaultImageUrl}
+            src={node.image || getDefaultImage()}
             height={150}
             fit="contain"
             radius="md"
@@ -108,18 +134,16 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
                 node.isAlive === false ? "grayscale(70%) opacity(0.7)" : "none",
             }}
           />
-
-          <Menu
-            shadow="md"
-            width={200}
-            position="bottom-end"
-            offset={5}
-            opened={menuOpened}
-            onChange={setMenuOpened}
-            withinPortal={true}
-            zIndex={2000}
-          >
-            <Menu.Target>
+          {isReadOnly ? (
+            <Tooltip
+              label="Xem chi tiết thành viên"
+              position="top"
+              withArrow
+              arrowPosition="center"
+              offset={5}
+              withinPortal
+              zIndex={2000}
+            >
               <ActionIcon
                 color="blue"
                 variant="filled"
@@ -130,54 +154,84 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
                   top: -10,
                   right: -10,
                   boxShadow: "0 0 5px rgba(0,0,0,0.2)",
+                  zIndex: 1010,
                 }}
-                onClick={() => setMenuOpened((o) => !o)}
+                onClick={() => onViewNode && onViewNode(node)}
               >
-                <IconMenu2 size="1.2rem" />
+                <IconEye size="1.2rem" />
               </ActionIcon>
-            </Menu.Target>
-
-            <Menu.Dropdown>
-              {onViewNode && (
-                <Menu.Item
-                  leftSection={<IconEye size={16} />}
-                  onClick={() => {
-                    onViewNode(node);
-                    setMenuOpened(false);
+            </Tooltip>
+          ) : (
+            <Menu
+              shadow="md"
+              width={200}
+              position="bottom-end"
+              offset={5}
+              opened={menuOpened}
+              onChange={setMenuOpened}
+              withinPortal={true}
+              zIndex={2000}
+            >
+              <Menu.Target>
+                <ActionIcon
+                  color="blue"
+                  variant="filled"
+                  radius="xl"
+                  size="lg"
+                  style={{
+                    position: "absolute",
+                    top: -10,
+                    right: -10,
+                    boxShadow: "0 0 5px rgba(0,0,0,0.2)",
                   }}
+                  onClick={() => setMenuOpened((o) => !o)}
                 >
-                  Xem chi tiết
-                </Menu.Item>
-              )}
+                  <IconMenu2 size="1.2rem" />
+                </ActionIcon>
+              </Menu.Target>
 
-              {onEditNode && (
-                <Menu.Item
-                  leftSection={<IconEdit size={16} />}
-                  onClick={() => {
-                    onEditNode(node);
-                    setMenuOpened(false);
-                  }}
-                >
-                  Chỉnh sửa
-                </Menu.Item>
-              )}
-
-              {onDeleteNode &&
-                node.gender !== "male" &&
-                node.generation !== 0 && (
+              <Menu.Dropdown>
+                {onViewNode && (
                   <Menu.Item
-                    color="red"
-                    leftSection={<IconTrash size={16} />}
+                    leftSection={<IconEye size={16} />}
                     onClick={() => {
-                      onDeleteNode(node);
+                      onViewNode(node);
                       setMenuOpened(false);
                     }}
                   >
-                    Xóa
+                    Xem chi tiết
                   </Menu.Item>
                 )}
-            </Menu.Dropdown>
-          </Menu>
+
+                {onEditNode && (
+                  <Menu.Item
+                    leftSection={<IconEdit size={16} />}
+                    onClick={() => {
+                      onEditNode(node);
+                      setMenuOpened(false);
+                    }}
+                  >
+                    Chỉnh sửa
+                  </Menu.Item>
+                )}
+
+                {onDeleteNode &&
+                  node.gender !== "male" &&
+                  node.generation !== 0 && (
+                    <Menu.Item
+                      color="red"
+                      leftSection={<IconTrash size={16} />}
+                      onClick={() => {
+                        onDeleteNode(node);
+                        setMenuOpened(false);
+                      }}
+                    >
+                      Xóa
+                    </Menu.Item>
+                  )}
+              </Menu.Dropdown>
+            </Menu>
+          )}
         </Box>
 
         <Title order={3} ta="center" mt="sm">
@@ -215,7 +269,7 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
         )}
 
         {/* Action buttons */}
-        {(showAddSpouse || showAddChild) && (
+        {(showAddSpouse || showAddChild) && isReadOnly === false && (
           <Group grow mt="md">
             {showAddSpouse && (
               <Button
