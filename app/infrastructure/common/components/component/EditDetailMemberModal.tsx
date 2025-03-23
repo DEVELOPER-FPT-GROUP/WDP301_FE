@@ -69,7 +69,7 @@ interface MediaItem {
 interface MediaSelectionResult {
   id: string;
   url: string;
-  status: "avatar" | "label" | "dump";
+  status: "avatar" | "label" | "unknown";
   memberId?: string;
 }
 
@@ -287,69 +287,69 @@ const EditDetailMemberModal: React.FC<EditDetailMemberModalProps> = ({
         // Kiểm tra nếu có nhiều ảnh trong response (Giả lập cho mục đích test)
         if (uploadedFile) {
           // Tạo một bản sao của response.data để không ảnh hưởng đến dữ liệu gốc
-          // const mockData = { ...response.data };
+          const mockData = { ...response.data };
 
-          // // Tạo một mảng media giả định với nhiều ảnh
-          // mockData.media = [
-          //   // Giữ lại media gốc nếu có
-          //   ...(response.data.media || []),
+          // Tạo một mảng media giả định với nhiều ảnh
+          mockData.media = [
+            // Giữ lại media gốc nếu có
+            ...(response.data.media || []),
 
-          //   // Thêm các ảnh giả định
-          //   {
-          //     id: "mock-media-1",
-          //     ownerId: "mock-media-1",
-          //     ownerType: "Member",
-          //     url: "https://res.cloudinary.com/dhfatqx0l/image/upload/v1742665011/uploads/lxqunmukpm49x0hca2vx.png",
-          //     fileName: "mock1.png",
-          //     mimeType: "image/png",
-          //     size: 330023,
-          //     createdAt: "2025-03-22T17:36:52.325Z",
-          //     updatedAt: "2025-03-22T17:36:52.325Z",
-          //   },
-          //   {
-          //     id: "mock-media-2",
-          //     ownerId: "mock-media-2",
-          //     ownerType: "Member",
-          //     url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574",
-          //     fileName: "mock2.jpg",
-          //     mimeType: "image/jpeg",
-          //     size: 250000,
-          //     createdAt: "2025-03-22T17:36:52.325Z",
-          //     updatedAt: "2025-03-22T17:36:52.325Z",
-          //   },
-          //   {
-          //     id: "mock-media-3",
-          //     ownerId: "mock-media-3",
-          //     ownerType: "Member",
-          //     url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961",
-          //     fileName: "mock3.jpg",
-          //     mimeType: "image/jpeg",
-          //     size: 280000,
-          //     createdAt: "2025-03-22T17:36:52.325Z",
-          //     updatedAt: "2025-03-22T17:36:52.325Z",
-          //   },
-          // ];
+            // Thêm các ảnh giả định
+            {
+              id: "mock-media-1",
+              ownerId: "mock-media-1",
+              ownerType: "Member",
+              url: "https://res.cloudinary.com/dhfatqx0l/image/upload/v1742665011/uploads/lxqunmukpm49x0hca2vx.png",
+              fileName: "mock1.png",
+              mimeType: "image/png",
+              size: 330023,
+              createdAt: "2025-03-22T17:36:52.325Z",
+              updatedAt: "2025-03-22T17:36:52.325Z",
+            },
+            {
+              id: "mock-media-2",
+              ownerId: "mock-media-2",
+              ownerType: "Member",
+              url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574",
+              fileName: "mock2.jpg",
+              mimeType: "image/jpeg",
+              size: 250000,
+              createdAt: "2025-03-22T17:36:52.325Z",
+              updatedAt: "2025-03-22T17:36:52.325Z",
+            },
+            {
+              id: "mock-media-3",
+              ownerId: "mock-media-3",
+              ownerType: "Member",
+              url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961",
+              fileName: "mock3.jpg",
+              mimeType: "image/jpeg",
+              size: 280000,
+              createdAt: "2025-03-22T17:36:52.325Z",
+              updatedAt: "2025-03-22T17:36:52.325Z",
+            },
+          ];
 
-          // // Sử dụng dữ liệu giả thay vì dữ liệu thật
-          // setApiResponseData(mockData);
-          // setShowImageSelection(true);
-          // setIsLoading(false);
+          // Sử dụng dữ liệu giả thay vì dữ liệu thật
+          setApiResponseData(mockData);
+          setShowImageSelection(true);
+          setIsLoading(false);
 
-          // // Thêm memberId để sử dụng trong ImageSelectionModal
-          // if (mockData && memberId) {
-          //   mockData.memberId = memberId;
-          // }
+          // Thêm memberId để sử dụng trong ImageSelectionModal
+          if (mockData && memberId) {
+            mockData.memberId = memberId;
+          }
 
           /* Khi API trả về nhiều ảnh thực sự, thay thế bằng:
 
           */
-          if (response?.data?.media && response.data.media.length > 1) {
-            setApiResponseData(response.data);
-            setShowImageSelection(true);
-            setIsLoading(false);
-          } else {
-            handleCompletionWithoutImageModal(response);
-          }
+          // if (response?.data?.media && response.data.media.length > 1) {
+          //   setApiResponseData(response.data);
+          //   setShowImageSelection(true);
+          //   setIsLoading(false);
+          // } else {
+          //   handleCompletionWithoutImageModal(response);
+          // }
         } else {
           handleCompletionWithoutImageModal(response);
         }

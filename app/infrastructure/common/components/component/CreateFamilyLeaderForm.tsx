@@ -6,7 +6,6 @@ import {
   Stack,
   Switch,
   Textarea,
-  Alert,
   Paper,
   Title,
   LoadingOverlay,
@@ -22,7 +21,6 @@ import { IconX, IconUpload } from "@tabler/icons-react";
 import { DateInput } from "@mantine/dates";
 import { useForm, yupResolver } from "@mantine/form";
 import * as Yup from "yup";
-import { IconAlertCircle } from "@tabler/icons-react";
 import { usePostApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import {
   notifyError,
@@ -78,7 +76,7 @@ interface MediaItem {
 interface MediaSelectionResult {
   id: string;
   url: string;
-  status: "avatar" | "label" | "dump";
+  status: "avatar" | "label" | "unknown";
   memberId?: string;
 }
 
@@ -93,7 +91,7 @@ interface ApiResponse {
   };
 }
 
-// Current Date and Time: 2025-03-22 19:10:18
+// Current Date and Time (UTC): 2025-03-23 02:53:45
 // User: HE171216
 
 const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
@@ -106,7 +104,6 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
   // States for managing images
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [previewImages, setPreviewImages] = useState<any>([]);
-
   // State để quản lý hiển thị modal chọn ảnh
   const [showImageSelection, setShowImageSelection] = useState(false);
   const [apiResponseData, setApiResponseData] = useState<
@@ -165,27 +162,54 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
         // ===== BẮT ĐẦU: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
 
         // Nếu có hơn 1 ảnh được tải lên (Giả lập cho mục đích test)
-        if (uploadedFiles.length > 1) {
+        if (uploadedFiles) {
           // Tạo một bản sao của response.data để không ảnh hưởng đến dữ liệu gốc
           const mockData = { ...response.data };
 
           // Tạo một mảng media giả định với các ảnh đã tải lên
-          mockData.media = uploadedFiles.map((file, index) => ({
-            ownerId: `mock-media-${index}`,
-            ownerType: "Member",
-            url: previewImages[index].url,
-            fileName: file.name,
-            mimeType: file.type,
-            size: file.size,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }));
+          mockData.media = [
+            // Giữ lại media gốc nếu có
+            ...(response.data.media || []),
+
+            // Thêm các ảnh giả định
+            {
+              ownerId: "mock-media-1",
+              ownerType: "Member",
+              url: "https://res.cloudinary.com/dhfatqx0l/image/upload/v1742665011/uploads/lxqunmukpm49x0hca2vx.png",
+              fileName: "mock1.png",
+              mimeType: "image/png",
+              size: 330023,
+              createdAt: "2025-03-22T17:36:52.325Z",
+              updatedAt: "2025-03-22T17:36:52.325Z",
+            },
+            {
+              ownerId: "mock-media-2",
+              ownerType: "Member",
+              url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574",
+              fileName: "mock2.jpg",
+              mimeType: "image/jpeg",
+              size: 250000,
+              createdAt: "2025-03-22T17:36:52.325Z",
+              updatedAt: "2025-03-22T17:36:52.325Z",
+            },
+            {
+              ownerId: "mock-media-3",
+              ownerType: "Member",
+              url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961",
+              fileName: "mock3.jpg",
+              mimeType: "image/jpeg",
+              size: 280000,
+              createdAt: "2025-03-22T17:36:52.325Z",
+              updatedAt: "2025-03-22T17:36:52.325Z",
+            },
+          ];
 
           // Lưu memberId của trưởng họ vừa tạo
           if (response?.data?.memberId) {
             setSelectedLeaderMemberId(response.data.memberId);
           }
 
+          console.log("Mock data for image selection:", mockData);
           // Sử dụng dữ liệu giả thay vì dữ liệu thật
           setApiResponseData(mockData);
           setShowImageSelection(true);
@@ -358,28 +382,30 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
           originalImage={previewImages.length > 0 ? previewImages[0].url : null}
           onComplete={handleImageSelectionComplete}
           onCancel={handleImageSelectionCancel}
-          modalType="edit-member"
-          customTexts={{
-            selectAvatarTitle: "Chọn ảnh đại diện cho trưởng họ",
-            selectAvatarDescription:
-              "Vui lòng chọn một ảnh để làm ảnh đại diện cho trưởng họ mới.",
-          }}
+          modalType="add-leader" // Đã thay đổi modalType thành "add-leader"
         />
       </Modal>
     );
   }
 
   return (
-    <Paper p="lg" withBorder radius="md" pos="relative">
-      <LoadingOverlay
-        visible={loading || createMutation.isPending}
-        overlayProps={{ radius: "md", blur: 2 }}
-      />
-      <Title order={3} mb="md" c="brown" fw={700}>
+    <>
+      <Title order={2} mb="md" style={{ marginTop: "150px" }} c="brown">
         Tạo Trưởng Họ
       </Title>
+      <Text mt="xl" mb="xl" size="xl" c="red" fw={500}>
+        Bạn cần tạo thông tin trưởng họ để bắt đầu xây dựng cây gia phả
+      </Text>
+      <Paper p="lg" withBorder radius="md" pos="relative">
+        <LoadingOverlay
+          visible={loading || createMutation.isPending}
+          overlayProps={{ radius: "md", blur: 2 }}
+        />
+        <Title order={3} mb="md" c="brown" fw={700}>
+          Tạo Trưởng Họ
+        </Title>
 
-      {error && (
+        {/* {error && (
         <Alert
           icon={<IconAlertCircle size={16} />}
           title="Lỗi"
@@ -388,135 +414,136 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
         >
           {error}
         </Alert>
-      )}
+      )} */}
 
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Stack gap="md">
-          <Group grow>
-            <TextInput
-              label="Họ"
-              placeholder="Nhập họ"
-              required
-              {...form.getInputProps("firstName")}
-            />
-            <TextInput
-              label="Tên đệm"
-              placeholder="Nhập tên đệm"
-              required
-              {...form.getInputProps("middleName")}
-            />
-            <TextInput
-              label="Tên"
-              placeholder="Nhập tên"
-              required
-              {...form.getInputProps("lastName")}
-            />
-          </Group>
-
-          {/* Đã xóa phần Select giới tính, mặc định là nam */}
-
-          <Group grow>
-            <DateInput
-              label="Ngày sinh"
-              placeholder="Chọn ngày sinh"
-              required
-              clearable={false}
-              {...form.getInputProps("dateOfBirth")}
-            />
-            <TextInput
-              label="Nơi sinh"
-              placeholder="Nhập nơi sinh"
-              required
-              {...form.getInputProps("placeOfBirth")}
-            />
-          </Group>
-
-          <Switch
-            label="Còn sống"
-            mt="xs"
-            {...form.getInputProps("isAlive", { type: "checkbox" })}
-          />
-
-          {!form.values.isAlive && (
+        <form onSubmit={form.onSubmit(handleSubmit)}>
+          <Stack gap="md">
             <Group grow>
-              <DateInput
-                label="Ngày mất"
-                placeholder="Chọn ngày mất"
+              <TextInput
+                label="Họ"
+                placeholder="Nhập họ"
                 required
-                clearable={false}
-                {...form.getInputProps("dateOfDeath")}
+                {...form.getInputProps("firstName")}
               />
               <TextInput
-                label="Nơi mất"
-                placeholder="Nhập nơi mất"
+                label="Tên đệm"
+                placeholder="Nhập tên đệm"
                 required
-                {...form.getInputProps("placeOfDeath")}
+                {...form.getInputProps("middleName")}
+              />
+              <TextInput
+                label="Tên"
+                placeholder="Nhập tên"
+                required
+                {...form.getInputProps("lastName")}
               />
             </Group>
-          )}
 
-          <Textarea
-            label="Thông tin tóm tắt"
-            placeholder="Nhập thông tin tóm tắt về trưởng họ"
-            autosize
-            minRows={3}
-            maxRows={5}
-            {...form.getInputProps("shortSummary")}
-          />
+            {/* Đã xóa phần Select giới tính, mặc định là nam */}
 
-          {/* Image upload section */}
-          <FileInput
-            label="Ảnh đại diện"
-            placeholder="Tải lên ảnh"
-            accept="image/png,image/jpeg,image/jpg"
-            multiple
-            leftSection={<IconUpload size={16} />}
-            onChange={handleImageUpload}
-          />
+            <Group grow>
+              <DateInput
+                label="Ngày sinh"
+                placeholder="Chọn ngày sinh"
+                required
+                clearable={false}
+                {...form.getInputProps("dateOfBirth")}
+              />
+              <TextInput
+                label="Nơi sinh"
+                placeholder="Nhập nơi sinh"
+                required
+                {...form.getInputProps("placeOfBirth")}
+              />
+            </Group>
 
-          {/* Image preview section */}
-          {previewImages.length > 0 && (
-            <SimpleGrid cols={3} spacing="md">
-              {previewImages.map((img: any, index: number) => (
-                <Card
-                  key={index}
-                  shadow="sm"
-                  padding="xs"
-                  radius="md"
-                  withBorder
-                >
-                  <ActionIcon
-                    color="red"
-                    variant="light"
-                    size="sm"
-                    style={{ position: "absolute", top: 4, right: 4 }}
-                    onClick={() => handleRemoveImage(img)}
-                  >
-                    <IconX size={16} />
-                  </ActionIcon>
-                  <Image
-                    src={img.url}
-                    alt={`Hình ảnh ${index + 1}`}
+            <Switch
+              label="Còn sống"
+              mt="xs"
+              {...form.getInputProps("isAlive", { type: "checkbox" })}
+            />
+
+            {!form.values.isAlive && (
+              <Group grow>
+                <DateInput
+                  label="Ngày mất"
+                  placeholder="Chọn ngày mất"
+                  required
+                  clearable={false}
+                  {...form.getInputProps("dateOfDeath")}
+                />
+                <TextInput
+                  label="Nơi mất"
+                  placeholder="Nhập nơi mất"
+                  required
+                  {...form.getInputProps("placeOfDeath")}
+                />
+              </Group>
+            )}
+
+            <Textarea
+              label="Thông tin tóm tắt"
+              placeholder="Nhập thông tin tóm tắt về trưởng họ"
+              autosize
+              minRows={3}
+              maxRows={5}
+              {...form.getInputProps("shortSummary")}
+            />
+
+            {/* Image upload section */}
+            <FileInput
+              label="Ảnh đại diện"
+              placeholder="Tải lên ảnh"
+              accept="image/png,image/jpeg,image/jpg"
+              multiple
+              leftSection={<IconUpload size={16} />}
+              onChange={handleImageUpload}
+            />
+
+            {/* Image preview section */}
+            {previewImages.length > 0 && (
+              <SimpleGrid cols={3} spacing="md">
+                {previewImages.map((img: any, index: number) => (
+                  <Card
+                    key={index}
+                    shadow="sm"
+                    padding="xs"
                     radius="md"
-                    height={150}
-                  />
-                </Card>
-              ))}
-            </SimpleGrid>
-          )}
+                    withBorder
+                  >
+                    <ActionIcon
+                      color="red"
+                      variant="light"
+                      size="sm"
+                      style={{ position: "absolute", top: 4, right: 4 }}
+                      onClick={() => handleRemoveImage(img)}
+                    >
+                      <IconX size={16} />
+                    </ActionIcon>
+                    <Image
+                      src={img.url}
+                      alt={`Hình ảnh ${index + 1}`}
+                      radius="md"
+                      height={150}
+                    />
+                  </Card>
+                ))}
+              </SimpleGrid>
+            )}
 
-          <Group justify="flex-end" mt="md">
-            <Button
-              type="submit"
-              loading={createMutation.isPending}
-              color="brown"
-            >
-              Tạo Trưởng Họ
-            </Button>
-          </Group>
-        </Stack>
-      </form>
-    </Paper>
+            <Group justify="flex-end" mt="md">
+              <Button
+                type="submit"
+                loading={createMutation.isPending}
+                color="brown"
+              >
+                Tạo Trưởng Họ
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      </Paper>
+    </>
   );
 };
 

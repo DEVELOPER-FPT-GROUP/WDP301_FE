@@ -132,7 +132,7 @@ interface ApiResponse {
 interface MediaSelectionResult {
   id: string;
   url: string;
-  status: "avatar" | "label" | "dump";
+  status: "avatar" | "label" | "unknown";
   memberId?: string;
 }
 
@@ -252,7 +252,7 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
 
         // ===== BẮT ĐẦU: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
 
-        // Tạo một bản sao của response.data để không ảnh hưởng đến dữ liệu gốc
+        // // Tạo một bản sao của response.data để không ảnh hưởng đến dữ liệu gốc
         // const mockData = { ...response.data };
 
         // // Tạo một mảng media giả định với nhiều ảnh
@@ -316,7 +316,7 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
           setLoading(false);
           handleFinalClose();
         }
-        // setLoading(false);
+        setLoading(false);
       },
     },
   });

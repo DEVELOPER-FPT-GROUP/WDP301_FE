@@ -25,6 +25,7 @@ import {
   notifyError,
   notifySuccess,
 } from "~/infrastructure/utils/notification/notification";
+import ImageSelectionModal from "./ImageSelectionModal"; // Import ImageSelectionModal
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -63,6 +64,36 @@ interface AddSpouseModalProps {
   name: string;
 }
 
+// Interfaces cho ImageSelectionModal
+interface MediaItem {
+  ownerId: string;
+  ownerType: string;
+  url: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface MediaSelectionResult {
+  id: string;
+  url: string;
+  status: "avatar" | "label" | "unknown";
+  memberId?: string;
+}
+
+interface ApiResponse {
+  statusCode: number;
+  message: string;
+  data: {
+    memberId: string;
+    familyId: string;
+    // Các trường khác...
+    media: MediaItem[];
+  };
+}
+
 const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
   opened,
   onClose,
@@ -77,6 +108,13 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
   // States for managing image - đã thay đổi thành một ảnh duy nhất
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // State để quản lý hiển thị modal chọn ảnh
+  const [showImageSelection, setShowImageSelection] = useState(false);
+  const [apiResponseData, setApiResponseData] = useState<
+    ApiResponse["data"] | null
+  >(null);
+  const [familyId, setFamilyId] = useState<string | null>(null);
 
   // Function to handle image upload - đã cập nhật cho một ảnh
   const handleImageUpload = (file: File | null) => {
@@ -122,12 +160,133 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
   const createSpouseMutation = usePostApi({
     endpoint: "members/add-spouse",
     options: {
-      onSuccess: () => {
-        onSuccess();
-        resetForm();
+      onSuccess: (response) => {
+        console.log(
+          "Backend response when adding spouse successfully:",
+          response
+        );
+
+        // ===== BẮT ĐẦU: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
+
+        // Kiểm tra nếu đã upload ảnh (Giả lập cho mục đích test)
+        if (uploadedFile) {
+          // Tạo một bản sao của response.data để không ảnh hưởng đến dữ liệu gốc
+          const mockData = { ...response.data };
+
+          // Giả sử API trả về familyId, lưu lại để sử dụng sau
+          if (mockData && mockData.familyId) {
+            setFamilyId(mockData.familyId);
+          }
+
+          // Tạo một mảng media giả định với nhiều ảnh
+          mockData.media = [
+            // Giữ lại media gốc nếu có
+            ...(response.data.media || []),
+
+            // Thêm các ảnh giả định
+            {
+              ownerId: "mock-media-1",
+              ownerType: "Member",
+              url: "https://res.cloudinary.com/dhfatqx0l/image/upload/v1742665011/uploads/lxqunmukpm49x0hca2vx.png",
+              fileName: "mock1.png",
+              mimeType: "image/png",
+              size: 330023,
+              createdAt: "2025-03-22T17:36:52.325Z",
+              updatedAt: "2025-03-22T17:36:52.325Z",
+            },
+            {
+              ownerId: "mock-media-2",
+              ownerType: "Member",
+              url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574",
+              fileName: "mock2.jpg",
+              mimeType: "image/jpeg",
+              size: 250000,
+              createdAt: "2025-03-22T17:36:52.325Z",
+              updatedAt: "2025-03-22T17:36:52.325Z",
+            },
+            {
+              ownerId: "mock-media-3",
+              ownerType: "Member",
+              url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961",
+              fileName: "mock3.jpg",
+              mimeType: "image/jpeg",
+              size: 280000,
+              createdAt: "2025-03-22T17:36:52.325Z",
+              updatedAt: "2025-03-22T17:36:52.325Z",
+            },
+          ];
+
+          // Sử dụng dữ liệu giả thay vì dữ liệu thật
+          setApiResponseData(mockData);
+          setShowImageSelection(true);
+          setLoading(false);
+
+          // ===== KẾT THÚC: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
+        } else {
+          // Nếu không có ảnh được tải lên, hoàn thành quy trình bình thường
+          handleCompletionWithoutImageModal();
+        }
+
+        /* Ghi chú: Đã comment đoạn code logic thực tế, bỏ comment sau khi test xong
+        
+        // Kiểm tra nếu có nhiều ảnh trong response
+        if (response?.data?.media && response.data.media.length > 1) {
+          setApiResponseData(response.data);
+          setShowImageSelection(true);
+          setLoading(false);
+        } else {
+          // Nếu không có nhiều ảnh, đóng modal và thông báo thành công
+          handleCompletionWithoutImageModal();
+        }
+        */
       },
     },
   });
+
+  // Xử lý hoàn thành mà không cần hiển thị modal chọn ảnh
+  const handleCompletionWithoutImageModal = () => {
+    notifySuccess({
+      title: "Thành công",
+      message: `Đã thêm ${gender === "male" ? "vợ" : "chồng"} thành công!`,
+    });
+    resetForm();
+    onSuccess();
+    onClose();
+  };
+
+  // Xử lý khi người dùng hoàn thành việc chọn ảnh
+  const handleImageSelectionComplete = (mediaData: MediaSelectionResult[]) => {
+    console.log("Selected media data:", mediaData);
+    notifySuccess({
+      title: "Thành công",
+      message: `Đã thêm ${
+        gender === "male" ? "vợ" : "chồng"
+      } thành công và xử lý ảnh!`,
+    });
+    handleFinalClose();
+  };
+
+  // Xử lý khi người dùng hủy quá trình chọn ảnh
+  const handleImageSelectionCancel = () => {
+    setShowImageSelection(false);
+    setApiResponseData(null);
+
+    notifySuccess({
+      title: "Thành công",
+      message: `Đã thêm ${
+        gender === "male" ? "vợ" : "chồng"
+      } thành công nhưng bỏ qua xử lý ảnh!`,
+    });
+
+    handleFinalClose();
+  };
+
+  // Đóng modal và làm mới dữ liệu
+  const handleFinalClose = () => {
+    resetForm();
+    onSuccess();
+    onClose();
+  };
 
   const resetForm = () => {
     form.reset();
@@ -138,9 +297,19 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
     setPreviewImage(null);
     setUploadedFile(null);
     setError(null);
+    setShowImageSelection(false);
+    setApiResponseData(null);
   };
 
+  // Xử lý đóng modal trong mọi trường hợp
   const handleClose = () => {
+    // Nếu đang hiển thị modal chọn ảnh, xử lý hủy quá trình chọn ảnh
+    if (showImageSelection) {
+      handleImageSelectionCancel();
+      return;
+    }
+
+    // Nếu không, thực hiện đóng modal bình thường
     resetForm();
     onClose();
   };
@@ -176,16 +345,6 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
 
       // Sử dụng mutation để gửi request
       createSpouseMutation.mutate(formData, {
-        onSuccess: () => {
-          notifySuccess({
-            title: "Thành công",
-            message: `Đã thêm ${
-              gender === "male" ? "vợ" : "chồng"
-            } thành công!`,
-          });
-          setLoading(false);
-          handleClose();
-        },
         onError: (error: any) => {
           setError(
             error?.response?.data?.message ||
@@ -219,6 +378,41 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
       }
     };
   }, []);
+
+  // Nếu đang hiển thị modal chọn ảnh
+  if (showImageSelection && apiResponseData) {
+    return (
+      <Modal
+        opened={opened}
+        onClose={handleClose}
+        title={
+          <Text size="xl" fw={700} c="brown">
+            Xử lý ảnh cho {gender === "male" ? "vợ" : "chồng"} mới
+          </Text>
+        }
+        centered
+        size="xl"
+      >
+        <ImageSelectionModal
+          media={apiResponseData.media}
+          newMemberId={apiResponseData.memberId}
+          familyId={familyId}
+          originalImage={previewImage}
+          onComplete={handleImageSelectionComplete}
+          onCancel={handleImageSelectionCancel}
+          modalType="add-spouse"
+          customTexts={{
+            selectAvatarTitle: `Chọn ảnh đại diện cho ${
+              gender === "male" ? "vợ" : "chồng"
+            } mới`,
+            selectAvatarDescription: `Vui lòng chọn một ảnh để làm ảnh đại diện cho ${
+              gender === "male" ? "vợ" : "chồng"
+            } mới.`,
+          }}
+        />
+      </Modal>
+    );
+  }
 
   return (
     <Modal

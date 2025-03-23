@@ -1,14 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { TableComponent } from "./components/Table";
-import {
-  AppShell,
-  Group,
-  Stack,
-  Title,
-  Loader,
-  Center,
-  Text,
-} from "@mantine/core";
+import { AppShell, Group, Stack, Title, Loader, Center } from "@mantine/core";
 import DeleteMemberModal from "../../infrastructure/common/components/component/DeleteMemberModal";
 import EditDetailMemberModal from "../../infrastructure/common/components/component/EditDetailMemberModal";
 import RestoreMemberModal from "./components/RestoreMemberDeleted";
@@ -139,10 +131,6 @@ const Route = () => {
             style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}
             className="mt-20"
           >
-            <Text mt="xl" mb="xl" size="xl" c="red" fw={500}>
-              Bạn cần tạo thông tin trưởng họ để bắt đầu quản lý thành viên dòng
-              họ
-            </Text>
             <CreateFamilyLeaderForm
               onSuccess={handleFamilyLeaderCreated}
               familyId={familyId}

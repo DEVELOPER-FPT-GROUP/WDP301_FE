@@ -305,12 +305,6 @@ const TreePage: React.FC = () => {
           <div
             style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}
           >
-            <Title order={2} mb="md">
-              Tạo Trưởng Họ
-            </Title>
-            <Text mt="xl" mb="xl" size="xl" c="red" fw={500}>
-              Bạn cần tạo thông tin trưởng họ để bắt đầu xây dựng cây gia phả
-            </Text>
             <CreateFamilyLeaderForm
               onSuccess={handleFamilyLeaderCreated}
               familyId={dataToken.familyId}

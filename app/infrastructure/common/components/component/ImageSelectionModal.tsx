@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Stack,
   Text,
@@ -20,7 +20,7 @@ import {
   Flex,
 } from "@mantine/core";
 import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
-import { IconAlertCircle, IconCheck } from "@tabler/icons-react";
+import { IconAlertCircle, IconPhoto } from "@tabler/icons-react";
 
 interface MediaItem {
   ownerId: string;
@@ -36,7 +36,7 @@ interface MediaItem {
 interface MediaSelectionResult {
   id: string;
   url: string;
-  status: "avatar" | "label" | "dump";
+  status: "avatar" | "label" | "unknown";
   memberId?: string; // Chỉ tồn tại khi status là avatar hoặc label
 }
 
@@ -54,6 +54,10 @@ interface CustomTexts {
   finishButton?: string;
   nextButton?: string;
   cancelButton?: string;
+  requiredAvatarMessage?: string; // Thêm message mới cho thông báo avatar bắt buộc
+  tooltipMessage?: string; // Thêm message cho tooltip
+  multipleImagesProcessingTitle?: string; // Tiêu đề xử lý nhiều ảnh
+  multipleImagesProcessingDescription?: string; // Mô tả xử lý nhiều ảnh
 }
 
 interface ImageSelectionModalProps {
@@ -63,8 +67,9 @@ interface ImageSelectionModalProps {
   originalImage: string | null;
   onComplete: (result: MediaSelectionResult[]) => void;
   onCancel?: () => void; // Thêm callback khi người dùng hủy
-  modalType?: "add-child" | "add-spouse" | "edit-member"; // Thêm loại modal
+  modalType?: "add-child" | "add-spouse" | "edit-member" | "add-leader"; // Thêm loại modal add-leader
   customTexts?: CustomTexts; // Thêm các tiêu đề tùy chỉnh
+  disableClose?: boolean; // Thêm prop để vô hiệu hóa nút đóng
 }
 
 interface FamilyMember {
@@ -75,19 +80,49 @@ interface FamilyMember {
   media?: string;
 }
 
+// Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-03-23 04:02:45
+// Current User's Login: HE171216
+
 const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
   media,
   newMemberId,
   familyId,
   originalImage,
   onComplete,
-  onCancel, // Thêm callback khi người dùng hủy
-  modalType = "add-child", // Mặc định là add-child
-  customTexts = {}, // Mặc định là đối tượng rỗng
+  onCancel,
+  modalType = "add-child",
+  customTexts = {},
 }) => {
+  // Ref để ẩn nút close
+  const modalRef = useRef<HTMLDivElement>(null);
+
   // Định nghĩa các tiêu đề mặc định dựa trên loại modal
   const getDefaultTexts = (): CustomTexts => {
     switch (modalType) {
+      case "add-leader":
+        return {
+          originalImageTitle: "Ảnh gốc đã tải lên",
+          selectAvatarTitle: "Chọn ảnh đại diện cho trưởng họ",
+          selectAvatarDescription:
+            "Vui lòng chọn một ảnh để làm ảnh đại diện cho trưởng họ mới.",
+          confirmRelativesTitle: "Xác nhận nhận diện người thân",
+          confirmRelativesDescription:
+            "Trong các ảnh còn lại, có ảnh nào là của người thân trong dòng họ không?",
+          labelImagesTitle: "Nhận diện thành viên trong ảnh",
+          labelImagesDescription:
+            "Nếu bạn nhận ra thành viên trong các ảnh dưới đây, hãy chọn họ từ danh sách.",
+          noButton: "Hủy",
+          yesButton: "Có, tôi muốn nhận diện",
+          finishButton: "Hoàn thành",
+          nextButton: "Xác nhận avatar",
+          cancelButton: "Hủy",
+          requiredAvatarMessage:
+            "Bạn buộc phải chọn một ảnh đại diện cho trưởng họ.",
+          tooltipMessage: "Bạn phải chọn một ảnh đại diện trước khi tiếp tục.",
+          multipleImagesProcessingTitle: "Xử lý nhiều ảnh cho trưởng họ",
+          multipleImagesProcessingDescription:
+            "Chúng tôi đã phát hiện nhiều ảnh được tải lên. Vui lòng xử lý chúng theo các bước sau.",
+        };
       case "add-spouse":
         return {
           originalImageTitle: "Ảnh gốc đã tải lên",
@@ -96,15 +131,18 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
             "Vui lòng chọn một ảnh để làm ảnh đại diện cho người phối ngẫu.",
           confirmRelativesTitle: "Xác nhận nhận diện người thân",
           confirmRelativesDescription:
-            "Trong các ảnh còn lại, có ảnh nào là của người thân trong gia đình bạn không?",
+            "Một số ảnh khác đã được tải lên cùng với ảnh đại diện. Bạn có muốn gán những ảnh này cho các thành viên khác trong gia đình không?",
           labelImagesTitle: "Nhận diện thành viên trong ảnh",
           labelImagesDescription:
             "Nếu bạn nhận ra thành viên gia đình trong các ảnh dưới đây, hãy chọn họ từ danh sách.",
-          noButton: "Không, hoàn thành",
+          noButton: "Hủy",
           yesButton: "Có, tôi muốn nhận diện",
           finishButton: "Hoàn thành",
           nextButton: "Tiếp tục",
           cancelButton: "Hủy",
+          multipleImagesProcessingTitle: "Xử lý nhiều ảnh cho người phối ngẫu",
+          multipleImagesProcessingDescription:
+            "Chúng tôi đã phát hiện nhiều ảnh được tải lên. Vui lòng xử lý chúng theo các bước sau.",
         };
       case "edit-member":
         return {
@@ -114,15 +152,19 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
             "Vui lòng chọn một ảnh để cập nhật ảnh đại diện.",
           confirmRelativesTitle: "Xác nhận nhận diện người thân",
           confirmRelativesDescription:
-            "Trong các ảnh còn lại, có ảnh nào là của người thân trong gia đình bạn không?",
+            "Một số ảnh khác đã được tải lên cùng với ảnh đại diện. Bạn có muốn gán những ảnh này cho các thành viên khác trong gia đình không?",
           labelImagesTitle: "Nhận diện thành viên trong ảnh",
           labelImagesDescription:
             "Nếu bạn nhận ra thành viên gia đình trong các ảnh dưới đây, hãy chọn họ từ danh sách.",
-          noButton: "Không, hoàn thành",
+          noButton: "Hủy",
           yesButton: "Có, tôi muốn nhận diện",
           finishButton: "Hoàn thành",
           nextButton: "Tiếp tục",
           cancelButton: "Hủy",
+          multipleImagesProcessingTitle:
+            "Xử lý nhiều ảnh khi chỉnh sửa thành viên",
+          multipleImagesProcessingDescription:
+            "Chúng tôi đã phát hiện nhiều ảnh được tải lên. Vui lòng xử lý chúng theo các bước sau.",
         };
       default: // add-child
         return {
@@ -132,15 +174,18 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
             "Vui lòng chọn một ảnh để làm ảnh đại diện cho thành viên mới.",
           confirmRelativesTitle: "Xác nhận nhận diện người thân",
           confirmRelativesDescription:
-            "Trong các ảnh còn lại, có ảnh nào là của người thân trong gia đình bạn không?",
+            "Một số ảnh khác đã được tải lên cùng với ảnh đại diện. Bạn có muốn gán những ảnh này cho các thành viên khác trong gia đình không?",
           labelImagesTitle: "Nhận diện thành viên trong ảnh",
           labelImagesDescription:
             "Nếu bạn nhận ra thành viên gia đình trong các ảnh dưới đây, hãy chọn họ từ danh sách.",
-          noButton: "Không, hoàn thành",
+          noButton: "Hủy",
           yesButton: "Có, tôi muốn nhận diện",
           finishButton: "Hoàn thành",
           nextButton: "Tiếp tục",
           cancelButton: "Hủy",
+          multipleImagesProcessingTitle: "Xử lý nhiều ảnh cho thành viên mới",
+          multipleImagesProcessingDescription:
+            "Chúng tôi đã phát hiện nhiều ảnh được tải lên. Vui lòng xử lý chúng theo các bước sau.",
         };
     }
   };
@@ -174,6 +219,47 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
   const [selectedMembers, setSelectedMembers] = useState<{
     [key: string]: FamilyMember | null;
   }>({});
+
+  // Ẩn nút close khi ở màn hình select-avatar
+  useEffect(() => {
+    // Nếu đang ở màn hình select-avatar, ẩn nút close
+    const hideCloseButton = () => {
+      // Tìm nút close và ẩn đi
+      const modalParent = modalRef.current?.closest(".mantine-Modal-root");
+      if (modalParent) {
+        const closeButton = modalParent.querySelector(".mantine-Modal-close");
+        if (closeButton) {
+          if (currentStep === "select-avatar") {
+            (closeButton as HTMLElement).style.display = "none";
+          } else {
+            (closeButton as HTMLElement).style.display = "";
+          }
+        }
+      }
+    };
+
+    // Gọi hàm ẩn nút close
+    hideCloseButton();
+
+    // Sử dụng MutationObserver để theo dõi thay đổi DOM
+    const observer = new MutationObserver(hideCloseButton);
+    if (modalRef.current) {
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    // Cleanup
+    return () => {
+      observer.disconnect();
+    };
+  }, [currentStep]);
+
+  // Console log thông báo khi component được tạo
+  useEffect(() => {
+    console.log(
+      `ImageSelectionModal: Xử lý ${media.length} ảnh cho ${modalType}`
+    );
+    console.log(`Thời gian bắt đầu xử lý: ${new Date().toISOString()}`);
+  }, []);
 
   // Lấy danh sách thành viên trong gia đình
   const { data: memberData, isLoading } = useGetApi({
@@ -248,6 +334,14 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
     if (selectedAvatarIndex === null) {
       return; // Không cho phép tiếp tục nếu chưa chọn avatar
     }
+
+    // Nếu đang trong trường hợp add-leader, submitSelectionData luôn mà không chuyển bước
+    if (modalType === "add-leader") {
+      submitSelectionData();
+      return;
+    }
+
+    // Các trường hợp khác, chuyển sang bước tiếp theo
     setCurrentStep("confirm-relatives");
   };
 
@@ -268,6 +362,17 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
 
   // Xử lý khi người dùng hủy
   const handleCancel = () => {
+    // Nếu đã có dữ liệu (đã chọn avatar) và không phải màn hình select-avatar
+    // thì submitSelectionData luôn
+    if (
+      selectedAvatarIndex !== null &&
+      modalType !== "add-leader" &&
+      currentStep !== "select-avatar"
+    ) {
+      submitSelectionData();
+      return;
+    }
+
     if (onCancel) {
       onCancel();
     }
@@ -299,11 +404,11 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
       const mediaResult: any = {
         id: item.ownerId,
         url: item.url,
-        status: item.memberId ? "label" : "dump",
+        status: item.memberId ? "label" : "unknown",
       };
 
-      // Chỉ thêm memberId nếu có giá trị và status không phải là dump
-      if (item.memberId && mediaResult.status !== "dump") {
+      // Chỉ thêm memberId nếu có giá trị và status không phải là unknown
+      if (item.memberId && mediaResult.status !== "unknown") {
         mediaResult.memberId = item.memberId;
       }
 
@@ -329,90 +434,284 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
   // Hiển thị bước 1: Chọn ảnh đại diện
   if (currentStep === "select-avatar") {
     return (
-      <Stack gap="xl">
-        {/* Hiển thị ảnh gốc ở phần trên với kích thước lớn hơn */}
-        {originalImage && (
+      <div ref={modalRef}>
+        <Stack gap="xl">
+          {/* Thông báo xử lý nhiều ảnh */}
+          <Alert
+            icon={<IconPhoto size={20} />}
+            title={texts.multipleImagesProcessingTitle}
+            color="blue"
+          >
+            {texts.multipleImagesProcessingDescription}
+          </Alert>
+
+          {/* Hiển thị thông báo bắt buộc chọn avatar */}
+          <Alert icon={<IconAlertCircle size={16} />} color="yellow" mb="md">
+            {modalType === "add-leader"
+              ? texts.requiredAvatarMessage
+              : "Vui lòng chọn một ảnh đại diện trước khi tiếp tục."}
+          </Alert>
+
+          {/* Hiển thị ảnh gốc ở phần trên với kích thước lớn hơn */}
+          {originalImage && (
+            <div>
+              <Title order={4} mb="md">
+                {texts.originalImageTitle}
+              </Title>
+              <Card shadow="sm" p="md" withBorder>
+                <Center>
+                  <Image
+                    src={originalImage}
+                    height={250}
+                    width="100%"
+                    fit="contain"
+                    alt="Original"
+                    radius="md"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "250px",
+                      objectFit: "contain",
+                    }}
+                  />
+                </Center>
+              </Card>
+            </div>
+          )}
+
+          <Divider my="md" />
+
+          {/* Phần chọn ảnh đại diện */}
           <div>
             <Title order={4} mb="md">
-              {texts.originalImageTitle}
+              {texts.selectAvatarTitle}
             </Title>
-            <Card shadow="sm" p="md" withBorder>
-              <Center>
-                <Image
-                  src={originalImage}
-                  height={250}
-                  fit="contain"
-                  alt="Original"
-                  radius="md"
-                />
-              </Center>
-            </Card>
+            <Text color="dimmed" mb="md">
+              {texts.selectAvatarDescription}
+            </Text>
+
+            <Grid>
+              {/* Hiển thị các ảnh trả về từ API để chọn làm avatar */}
+              {media.map((item, index) => (
+                <Grid.Col span={4} key={index}>
+                  <Card
+                    shadow="sm"
+                    p="xs"
+                    withBorder
+                    style={{
+                      borderColor:
+                        selectedAvatarIndex === index ? "blue" : undefined,
+                      borderWidth: selectedAvatarIndex === index ? 2 : 1,
+                      position: "relative",
+                      height: "100%",
+                    }}
+                  >
+                    {selectedAvatarIndex === index && (
+                      <Badge
+                        color="blue"
+                        style={{
+                          position: "absolute",
+                          top: 5,
+                          right: 5,
+                          zIndex: 10,
+                        }}
+                      >
+                        Đã chọn
+                      </Badge>
+                    )}
+                    <Stack align="center" style={{ height: "100%" }}>
+                      <Radio
+                        value={String(index)}
+                        checked={selectedAvatarIndex === index}
+                        onChange={() => setSelectedAvatarIndex(index)}
+                        label="Chọn làm avatar"
+                      />
+                      <Box
+                        style={{
+                          position: "relative",
+                          width: "100%",
+                          height: "150px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Image
+                          src={item.url}
+                          height={150}
+                          width={200}
+                          fit="contain"
+                          alt={`Generated ${index + 1}`}
+                          radius="md"
+                          style={{
+                            maxWidth: "100%",
+                            maxHeight: "150px",
+                            objectFit: "contain",
+                          }}
+                        />
+                      </Box>
+                    </Stack>
+                  </Card>
+                </Grid.Col>
+              ))}
+            </Grid>
           </div>
-        )}
 
-        <Divider my="md" />
+          {/* Chỉ hiển thị nút tiếp tục, không hiển thị nút hủy ở bước chọn avatar */}
+          <Group justify="flex-end" mt="xl">
+            <Button
+              variant="filled"
+              color="blue"
+              size="md"
+              onClick={handleAvatarSelected}
+              disabled={selectedAvatarIndex === null}
+            >
+              {texts.nextButton}
+            </Button>
+          </Group>
+        </Stack>
+      </div>
+    );
+  }
 
-        {/* Phần chọn ảnh đại diện */}
-        <div>
-          <Title order={4} mb="md">
-            {texts.selectAvatarTitle}
-          </Title>
-          <Text color="dimmed" mb="md">
-            {texts.selectAvatarDescription}
-          </Text>
+  // Hiển thị bước 2: Xác nhận có muốn nhận diện người thân không
+  if (currentStep === "confirm-relatives") {
+    return (
+      <div ref={modalRef}>
+        <Stack gap="xl">
+          <Alert
+            icon={<IconPhoto size={20} />}
+            title={texts.confirmRelativesTitle}
+            color="blue"
+          >
+            {texts.confirmRelativesDescription}
+          </Alert>
 
-          <Grid>
-            {/* Hiển thị các ảnh trả về từ API để chọn làm avatar */}
-            {media.map((item, index) => (
-              <Grid.Col span={4} key={index}>
-                <Card
-                  shadow="sm"
-                  p="xs"
-                  withBorder
+          <Group justify="center" mt="lg">
+            <Button
+              variant="outline"
+              color="gray"
+              size="md"
+              onClick={() => handleConfirmLabelImages(false)}
+            >
+              {texts.noButton}
+            </Button>
+            <Button
+              variant="filled"
+              color="blue"
+              size="md"
+              onClick={() => handleConfirmLabelImages(true)}
+            >
+              {texts.yesButton}
+            </Button>
+          </Group>
+        </Stack>
+      </div>
+    );
+  }
+
+  // Hiển thị bước 3: Nhận diện thành viên trong ảnh với layout mới
+  return (
+    <div ref={modalRef}>
+      <Stack gap="xl">
+        <Title order={4} mb="md">
+          {texts.labelImagesTitle}
+        </Title>
+        <Text color="dimmed" mb="md">
+          {texts.labelImagesDescription}
+        </Text>
+
+        {/* Lặp qua các ảnh, bỏ qua ảnh đã chọn làm avatar */}
+        {imageAssignments.map((item, index) => {
+          // Bỏ qua ảnh đã chọn làm avatar
+          if (index === selectedAvatarIndex) {
+            return null;
+          }
+
+          const selectedMember = selectedMembers[item.ownerId];
+
+          return (
+            <Paper shadow="sm" p="md" withBorder mb="md" key={item.ownerId}>
+              <Flex gap="md" align="flex-start">
+                {/* Bên trái: Ảnh nhỏ */}
+                <Box
                   style={{
-                    borderColor:
-                      selectedAvatarIndex === index ? "blue" : undefined,
-                    borderWidth: selectedAvatarIndex === index ? 2 : 1,
-                    position: "relative",
+                    width: "30%",
+                    minWidth: "120px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "120px",
                   }}
                 >
-                  {selectedAvatarIndex === index && (
-                    <Badge
-                      color="blue"
-                      style={{
-                        position: "absolute",
-                        top: 5,
-                        right: 5,
-                        zIndex: 10,
-                      }}
-                    >
-                      Đã chọn
-                    </Badge>
-                  )}
-                  <Stack align="center">
-                    <Radio
-                      value={String(index)}
-                      checked={selectedAvatarIndex === index}
-                      onChange={() => setSelectedAvatarIndex(index)}
-                      label="Chọn làm avatar"
-                    />
-                    <Box style={{ position: "relative" }}>
-                      <Image
-                        src={item.url}
-                        height={150}
-                        fit="contain"
-                        alt={`Generated ${index + 1}`}
-                        radius="md"
-                      />
-                    </Box>
-                  </Stack>
-                </Card>
-              </Grid.Col>
-            ))}
-          </Grid>
-        </div>
+                  <Image
+                    src={item.url}
+                    height={120}
+                    width={150}
+                    fit="contain"
+                    alt={`Image ${index + 1}`}
+                    radius="md"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "120px",
+                      objectFit: "contain",
+                    }}
+                  />
+                </Box>
 
-        {/* Nút hủy và tiếp tục */}
+                {/* Bên phải: Dropdown và ảnh của thành viên được chọn */}
+                <Box style={{ flex: 1 }}>
+                  <Select
+                    label="Người trong ảnh"
+                    placeholder="Chọn thành viên"
+                    data={memberOptions}
+                    value={item.memberId}
+                    onChange={(value) =>
+                      handleMemberSelection(item.ownerId, value)
+                    }
+                    searchable
+                    clearable
+                    nothingFoundMessage="Không tìm thấy thành viên nào"
+                    mb="md"
+                  />
+
+                  {/* Hiển thị ảnh của thành viên đã chọn nếu có */}
+                  {selectedMember && (
+                    <Stack gap="xs">
+                      <Text size="sm" fw={500}>
+                        Xác nhận: {selectedMember.firstName}{" "}
+                        {selectedMember.middleName} {selectedMember.lastName}
+                      </Text>
+                      {selectedMember.media && (
+                        <Box style={{ width: "100px", height: "100px" }}>
+                          <Image
+                            src={selectedMember.media}
+                            height={100}
+                            width={100}
+                            fit="contain"
+                            alt="Ảnh thành viên"
+                            radius="md"
+                            style={{
+                              maxWidth: "100%",
+                              maxHeight: "100%",
+                              objectFit: "contain",
+                            }}
+                          />
+                        </Box>
+                      )}
+                      {!selectedMember.media && (
+                        <Text size="sm" color="dimmed" fs="italic">
+                          (Thành viên này chưa có ảnh đại diện)
+                        </Text>
+                      )}
+                    </Stack>
+                  )}
+                </Box>
+              </Flex>
+            </Paper>
+          );
+        })}
+
+        {/* Nút hủy và hoàn thành */}
         <Group justify="flex-end" mt="xl">
           <Button
             variant="outline"
@@ -426,151 +725,13 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
             variant="filled"
             color="blue"
             size="md"
-            onClick={handleAvatarSelected}
-            disabled={selectedAvatarIndex === null}
+            onClick={handleSubmit}
           >
-            {texts.nextButton}
+            {texts.finishButton}
           </Button>
         </Group>
       </Stack>
-    );
-  }
-
-  // Hiển thị bước 2: Xác nhận có muốn nhận diện người thân không
-  if (currentStep === "confirm-relatives") {
-    return (
-      <Stack gap="xl">
-        <Alert
-          icon={<IconAlertCircle size={20} />}
-          title={texts.confirmRelativesTitle}
-          color="blue"
-        >
-          {texts.confirmRelativesDescription}
-        </Alert>
-
-        <Group justify="center" mt="lg">
-          <Button
-            variant="outline"
-            color="gray"
-            size="md"
-            onClick={() => handleConfirmLabelImages(false)}
-          >
-            {texts.noButton}
-          </Button>
-          <Button
-            variant="filled"
-            color="blue"
-            size="md"
-            onClick={() => handleConfirmLabelImages(true)}
-          >
-            {texts.yesButton}
-          </Button>
-        </Group>
-
-        {/* Thêm nút Hủy ở dưới */}
-        <Group justify="center" mt="sm">
-          <Button
-            variant="subtle"
-            color="gray"
-            size="sm"
-            onClick={handleCancel}
-          >
-            {texts.cancelButton}
-          </Button>
-        </Group>
-      </Stack>
-    );
-  }
-
-  // Hiển thị bước 3: Nhận diện thành viên trong ảnh với layout mới
-  return (
-    <Stack gap="xl">
-      <Title order={4} mb="md">
-        {texts.labelImagesTitle}
-      </Title>
-      <Text color="dimmed" mb="md">
-        {texts.labelImagesDescription}
-      </Text>
-
-      {/* Lặp qua các ảnh, bỏ qua ảnh đã chọn làm avatar */}
-      {imageAssignments.map((item, index) => {
-        // Bỏ qua ảnh đã chọn làm avatar
-        if (index === selectedAvatarIndex) {
-          return null;
-        }
-
-        const selectedMember = selectedMembers[item.ownerId];
-
-        return (
-          <Paper shadow="sm" p="md" withBorder mb="md" key={item.ownerId}>
-            <Flex gap="md" align="flex-start">
-              {/* Bên trái: Ảnh nhỏ */}
-              <Box style={{ width: "30%", minWidth: "120px" }}>
-                <Image
-                  src={item.url}
-                  height={120}
-                  fit="contain"
-                  alt={`Image ${index + 1}`}
-                  radius="md"
-                />
-              </Box>
-
-              {/* Bên phải: Dropdown và ảnh của thành viên được chọn */}
-              <Box style={{ flex: 1 }}>
-                <Select
-                  label="Người trong ảnh"
-                  placeholder="Chọn thành viên"
-                  data={memberOptions}
-                  value={item.memberId}
-                  onChange={(value) =>
-                    handleMemberSelection(item.ownerId, value)
-                  }
-                  searchable
-                  clearable
-                  nothingFoundMessage="Không tìm thấy thành viên nào"
-                  mb="md"
-                />
-
-                {/* Hiển thị ảnh của thành viên đã chọn nếu có */}
-                {selectedMember && (
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>
-                      Xác nhận: {selectedMember.firstName}{" "}
-                      {selectedMember.middleName} {selectedMember.lastName}
-                    </Text>
-                    {selectedMember.media && (
-                      <Image
-                        src={selectedMember.media}
-                        height={100}
-                        width={100}
-                        fit="contain"
-                        alt="Ảnh thành viên"
-                        radius="md"
-                      />
-                    )}
-                    {!selectedMember.media && (
-                      <Text size="sm" color="dimmed" fs="italic">
-                        (Thành viên này chưa có ảnh đại diện)
-                      </Text>
-                    )}
-                  </Stack>
-                )}
-              </Box>
-            </Flex>
-          </Paper>
-        );
-      })}
-
-      {/* Nút hủy và hoàn thành */}
-      <Group justify="flex-end" mt="xl">
-        <Button variant="outline" color="gray" size="md" onClick={handleCancel}>
-          {texts.cancelButton}
-        </Button>
-        <Button variant="filled" color="blue" size="md" onClick={handleSubmit}>
-          {texts.finishButton}
-        </Button>
-      </Group>
-    </Stack>
+    </div>
   );
 };
 
