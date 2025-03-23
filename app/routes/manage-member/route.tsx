@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { TableComponent } from "./components/Table";
-import { AppShell, Group, Stack, Title, Loader, Center } from "@mantine/core";
+import {
+  AppShell,
+  Group,
+  Stack,
+  Title,
+  Loader,
+  Center,
+  Tabs,
+  Text,
+} from "@mantine/core";
+import { IconUserCheck, IconUserX } from "@tabler/icons-react";
 import DeleteMemberModal from "../../infrastructure/common/components/component/DeleteMemberModal";
 import EditDetailMemberModal from "../../infrastructure/common/components/component/EditDetailMemberModal";
 import RestoreMemberModal from "./components/RestoreMemberDeleted";
@@ -12,6 +22,7 @@ import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks"
 export const meta = () => [{ title: "Quản lý thành viên" }];
 
 const Route = () => {
+  const [activeTab, setActiveTab] = useState<string>("active"); // "active" or "deleted"
   const [selectedData, setSelectedData] = useState<any>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedMemberName, setSelectedMemberName] = useState<string | null>(
@@ -21,13 +32,17 @@ const Route = () => {
   const [deleteMemberModalOpened, setDeleteMemberModalOpened] = useState(false);
   const [restoreMemberModalOpened, setRestoreMemberModalOpened] =
     useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshKeyActive, setRefreshKeyActive] = useState(0);
+  const [refreshKeyDeleted, setRefreshKeyDeleted] = useState(0);
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
-  const [memberData, setMemberData] = useState<any[]>([]);
-  const [totalItems, setTotalItems] = useState(0);
+  const [activeMembers, setActiveMembers] = useState<any[]>([]);
+  const [deletedMembers, setDeletedMembers] = useState<any[]>([]);
+  const [totalActiveItems, setTotalActiveItems] = useState(0);
+  const [totalDeletedItems, setTotalDeletedItems] = useState(0);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Lấy familyId từ token
   useEffect(() => {
@@ -39,23 +54,70 @@ const Route = () => {
     }
   }, []);
 
-  // Fetch data with pagination
-  const endpoint = familyId ? `members/family/${familyId}/search` : "";
-  const { data, isLoading, isFetching } = useGetApi({
-    queryKey: ["member", currentPage, perPage, refreshKey, familyId],
-    endpoint: endpoint,
-    // Fixed limit to 10 items per page as requested
-    queryParams: { page: currentPage, limit: perPage },
+  // Fetch active members (isDeleted = false)
+  const endpointActive = familyId ? `members/family/${familyId}/search` : "";
+  const {
+    data: activeData,
+    isLoading: isLoadingActive,
+    isFetching: isFetchingActive,
+  } = useGetApi({
+    queryKey: [
+      "activeMembers",
+      currentPage,
+      perPage,
+      refreshKeyActive,
+      familyId,
+      searchTerm,
+    ],
+    endpoint: endpointActive,
+    queryParams: {
+      page: currentPage,
+      limit: perPage,
+      isDeleted: false,
+      search: searchTerm || undefined, // Only add search param if it has a value
+    },
   });
 
-  // Update local state when data changes
+  // Fetch deleted members (isDeleted = true)
+  const endpointDeleted = familyId ? `members/family/${familyId}/search` : "";
+  const {
+    data: deletedData,
+    isLoading: isLoadingDeleted,
+    isFetching: isFetchingDeleted,
+  } = useGetApi({
+    queryKey: [
+      "deletedMembers",
+      currentPage,
+      perPage,
+      refreshKeyDeleted,
+      familyId,
+      searchTerm,
+    ],
+    endpoint: endpointDeleted,
+    queryParams: {
+      page: currentPage,
+      limit: perPage,
+      isDeleted: true,
+      search: searchTerm || undefined, // Only add search param if it has a value
+    },
+  });
+
+  // Update local state when active data changes
   useEffect(() => {
-    if (data?.data) {
-      setMemberData(data.data.items || []);
-      setTotalItems(data.data.totalItems || 0);
+    if (activeData?.data) {
+      setActiveMembers(activeData.data.items || []);
+      setTotalActiveItems(activeData.data.totalItems || 0);
       setDataLoaded(true);
     }
-  }, [data]);
+  }, [activeData]);
+
+  // Update local state when deleted data changes
+  useEffect(() => {
+    if (deletedData?.data) {
+      setDeletedMembers(deletedData.data.items || []);
+      setTotalDeletedItems(deletedData.data.totalItems || 0);
+    }
+  }, [deletedData]);
 
   const handleDelete = useCallback((data: any) => {
     setSelectedMemberId(data.memberId);
@@ -77,9 +139,19 @@ const Route = () => {
     setRestoreMemberModalOpened(true);
   }, []);
 
-  const refreshTable = useCallback(() => {
-    setRefreshKey((prev) => prev + 1);
+  const refreshActiveTable = useCallback(() => {
+    setRefreshKeyActive((prev) => prev + 1);
   }, []);
+
+  const refreshDeletedTable = useCallback(() => {
+    setRefreshKeyDeleted((prev) => prev + 1);
+  }, []);
+
+  // Refresh both tables - useful after operations that affect both lists
+  const refreshAllTables = useCallback(() => {
+    refreshActiveTable();
+    refreshDeletedTable();
+  }, [refreshActiveTable, refreshDeletedTable]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -91,7 +163,12 @@ const Route = () => {
   };
 
   const handleFamilyLeaderCreated = () => {
-    refreshTable(); // Refresh the data after creating a family leader
+    refreshAllTables(); // Refresh the data after creating a family leader
+  };
+
+  const handleSearch = (search: string) => {
+    setSearchTerm(search);
+    setCurrentPage(1); // Reset to first page when searching
   };
 
   const columns = [
@@ -99,6 +176,15 @@ const Route = () => {
     { key: "middleName", label: "Tên đệm" },
     { key: "lastName", label: "Tên" },
   ];
+
+  // Get current members data based on active tab
+  const currentMembers =
+    activeTab === "active" ? activeMembers : deletedMembers;
+  const totalItems =
+    activeTab === "active" ? totalActiveItems : totalDeletedItems;
+  const isLoading = activeTab === "active" ? isLoadingActive : isLoadingDeleted;
+  const isFetching =
+    activeTab === "active" ? isFetchingActive : isFetchingDeleted;
 
   return (
     <AppShell padding="xl" styles={{ main: { backgroundColor: "#f5f2dc" } }}>
@@ -109,8 +195,8 @@ const Route = () => {
           </Title>
 
           {/* Show export button only when there is member data */}
-          {dataLoaded && memberData.length > 0 && (
-            <ExportAccountsButton memberData={memberData} />
+          {dataLoaded && activeMembers.length > 0 && (
+            <ExportAccountsButton memberData={activeMembers} />
           )}
         </Group>
       </Stack>
@@ -120,12 +206,12 @@ const Route = () => {
         <p style={{ color: "red", textAlign: "center" }}>
           Không tìm thấy ID dòng họ! Vui lòng đăng nhập lại.
         </p>
-      ) : isLoading || isFetching ? (
+      ) : isLoadingActive && isLoadingDeleted ? (
         <Center py="xl">
           <Loader />
         </Center>
-      ) : dataLoaded && totalItems === 0 ? (
-        /* Only show Create Family Leader Form when there are no members */
+      ) : dataLoaded && totalActiveItems === 0 && totalDeletedItems === 0 ? (
+        /* Only show Create Family Leader Form when there are no members at all */
         <Center style={{ width: "100%", height: "70vh" }}>
           <div
             style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}
@@ -138,21 +224,50 @@ const Route = () => {
           </div>
         </Center>
       ) : (
-        /* Show table when there are members */
-        <TableComponent
-          key={refreshKey}
-          columns={columns}
-          data={memberData || []}
-          isLoading={isLoading || isFetching}
-          totalItems={totalItems}
-          currentPage={currentPage}
-          perPage={perPage}
-          onPageChange={handlePageChange}
-          onPerPageChange={handlePerPageChange}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onRestore={handleRestore}
-        />
+        /* Show tabs and table when there are members */
+        <>
+          <Tabs
+            value={activeTab}
+            onChange={(value) => setActiveTab(value as string)}
+          >
+            <Tabs.List>
+              <Tabs.Tab
+                value="active"
+                leftSection={<IconUserCheck size={16} />}
+              >
+                Thành viên (
+                <Text span c="red" fw={700}>
+                  {totalActiveItems}
+                </Text>
+                )
+              </Tabs.Tab>
+              <Tabs.Tab value="deleted" leftSection={<IconUserX size={16} />}>
+                Đã xóa (
+                <Text span c="red" fw={700}>
+                  {totalDeletedItems}
+                </Text>
+                )
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
+
+          <TableComponent
+            key={activeTab === "active" ? refreshKeyActive : refreshKeyDeleted}
+            columns={columns}
+            data={currentMembers || []}
+            isLoading={isLoading || isFetching}
+            totalItems={totalItems}
+            currentPage={currentPage}
+            perPage={perPage}
+            onPageChange={handlePageChange}
+            onPerPageChange={handlePerPageChange}
+            onSearch={handleSearch}
+            searchValue={searchTerm}
+            onEdit={activeTab === "active" ? handleEdit : undefined} // Only allow editing active members
+            onDelete={activeTab === "active" ? handleDelete : undefined} // Only allow deleting active members
+            onRestore={activeTab === "deleted" ? handleRestore : undefined} // Only allow restoring deleted members
+          />
+        </>
       )}
 
       {/* Only render the EditDetailMemberModal when selectedMemberId exists */}
@@ -164,7 +279,7 @@ const Route = () => {
             setSelectedMemberId(null);
           }}
           memberId={selectedMemberId}
-          refreshState={refreshTable}
+          refreshState={refreshAllTables}
         />
       )}
 
@@ -173,14 +288,14 @@ const Route = () => {
         onClose={() => setDeleteMemberModalOpened(false)}
         memberId={selectedMemberId || ""}
         memberName={selectedMemberName || ""}
-        onSuccess={refreshTable}
+        onSuccess={refreshAllTables}
       />
 
       <RestoreMemberModal
         opened={restoreMemberModalOpened}
         onClose={() => setRestoreMemberModalOpened(false)}
         memberData={selectedData}
-        refreshTable={refreshTable}
+        refreshTable={refreshAllTables}
       />
     </AppShell>
   );

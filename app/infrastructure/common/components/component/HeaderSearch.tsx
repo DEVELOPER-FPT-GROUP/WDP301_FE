@@ -1,14 +1,12 @@
 import { Box, Button, FileButton, Flex, Paper, TextInput } from "@mantine/core";
 import { IconSearch, IconUpload } from "@tabler/icons-react";
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import { useGetApi } from "../../api/hooks/requestCommonHooks";
 import { Constants } from "~/infrastructure/core/constants";
 import { jwtDecode } from "jwt-decode";
-import ModalPerson from "./ModalPerson";
 import ModalHistory from "./ModalHistory";
 import ModalDeath from "./ModalDeath";
-import { log } from "util";
-
+import { useNavigate } from "react-router";
 const getFamilyIdFromToken = () => {
   const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
   if (!token) return null;
@@ -27,7 +25,7 @@ const HeaderSearch = () => {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [modalOpened, setModalOpened] = useState(false);
-
+  const navigate = useNavigate();
   const familyId = getFamilyIdFromToken();
 
   // 🕯️ Ngày giỗ
@@ -59,7 +57,9 @@ const HeaderSearch = () => {
       search,
     },
   });
-
+  // if (personData) {
+  //   console.log(`Danh sách thanh vien`, personData.data.items);
+  // }
   // Lấy danh sách phù hợp với bộ lọc
   const getResults = () => {
     if (!search.trim()) return [];
@@ -73,7 +73,8 @@ const HeaderSearch = () => {
     }
 
     if (activeFilter === "person" && personData?.data) {
-      return personData.data;
+      console.log(`Danh sách thanh vien`, personData.data.items);
+      return personData.data.items;
     }
 
     return [];
@@ -88,6 +89,16 @@ const HeaderSearch = () => {
   };
 
   const handleSelectItem = (item: any) => {
+    if (activeFilter === "person") {
+      // Điều hướng đến trang chi tiết thành viên thay vì mở modal
+      navigate("/detail-member", {
+        state: {
+          memberId: item.memberId,
+        },
+      });
+      setSearch("");
+      return;
+    }
     setSelectedItem(item);
     setModalOpened(true);
     setSearch("");
@@ -123,30 +134,45 @@ const HeaderSearch = () => {
                   overflowY: "auto",
                 }}
               >
-                {results.map((item: any, idx: number) => (
-                  <Box
-                    key={idx}
-                    p="xs"
-                    style={{
-                      cursor: "pointer",
-                      transition: "background-color 0.2s",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#f1f3f5")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "white")
-                    }
-                    onClick={() => handleSelectItem(item)}
-                  >
-                    {/* Tuỳ theo bộ lọc thì hiện fullname / title */}
-                    {activeFilter === "history"
-                      ? item.historicalRecordTitle
-                      : activeFilter === "deathAnniversary"
+                {results.map((item: any, idx: number) => {
+                  // Tạo biến tạm để lưu và log giá trị
+                  const fullName =
+                    activeFilter === "person"
                       ? `${item.firstName} ${item.middleName} ${item.lastName}`
-                      : item.fullname || item.name}
-                  </Box>
-                ))}
+                      : "";
+
+                  // Console log giá trị
+                  if (activeFilter === "person") {
+                    console.log("Full name:", fullName);
+                  }
+
+                  return (
+                    <Box
+                      key={idx}
+                      p="xs"
+                      style={{
+                        cursor: "pointer",
+                        transition: "background-color 0.2s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f1f3f5")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "white")
+                      }
+                      onClick={() => handleSelectItem(item)}
+                    >
+                      {/* Sử dụng biến tạm thay vì logic phức tạp */}
+                      {activeFilter === "history"
+                        ? item.historicalRecordTitle
+                        : activeFilter === "deathAnniversary"
+                        ? `${item.firstName} ${item.middleName} ${item.lastName}`
+                        : activeFilter === "person"
+                        ? `${item.firstName} ${item.middleName} ${item.lastName}`
+                        : item.fullname || item.name || item.title || "unknown"}
+                    </Box>
+                  );
+                })}
               </Paper>
             )}
           </Box>
@@ -180,15 +206,6 @@ const HeaderSearch = () => {
           ))}
         </Flex>
       </Flex>
-
-      {/* 🪟 Hiển thị modal tương ứng */}
-      {activeFilter === "person" && selectedItem && (
-        <ModalPerson
-          opened={modalOpened}
-          onClose={() => setModalOpened(false)}
-          data={selectedItem}
-        />
-      )}
 
       {activeFilter === "history" && selectedItem && (
         <ModalHistory

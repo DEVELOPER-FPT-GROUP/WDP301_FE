@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import React from "react";
+import { useState } from "react";
 import {
   Table,
   Pagination,
@@ -9,19 +8,14 @@ import {
   Loader,
   ActionIcon,
   Center,
-  Tabs,
-  Badge,
+  Box,
 } from "@mantine/core";
 import {
   IconEdit,
   IconTrash,
-  IconRestore,
-  IconUsers,
-  IconUserOff,
+  IconRecycle,
   IconSearch,
-  IconEyeglass,
 } from "@tabler/icons-react";
-import { useNavigate } from "react-router";
 
 interface TableProps<T> {
   columns: { key: keyof T; label: string }[];
@@ -30,191 +24,97 @@ interface TableProps<T> {
   totalItems: number;
   currentPage: number;
   perPage: number;
+  searchValue?: string;
   onPageChange: (page: number) => void;
   onPerPageChange: (perPage: number) => void;
-  onEdit: (row: T) => void;
-  onDelete: (row: T) => void;
-  onRestore: (row: T) => void;
+  onSearch: (searchTerm: string) => void;
+  onEdit?: (row: T) => void; // Optional for deleted members
+  onDelete?: (row: T) => void; // Optional for deleted members
+  onRestore?: (row: T) => void; // For deleted members
 }
 
-export function TableComponent<
-  T extends {
-    memberId: string | number;
-    isDeleted: boolean;
-    firstName: string;
-    middleName?: string;
-    lastName: string;
-    gender: string;
-    generation: number;
-  }
->({
+export function TableComponent<T extends { memberId: string }>({
   columns,
   data,
   isLoading,
   totalItems,
   currentPage,
   perPage,
+  searchValue = "",
   onPageChange,
   onPerPageChange,
+  onSearch,
   onEdit,
   onDelete,
   onRestore,
 }: TableProps<T>) {
   const perPageOptions = [10, 20, 50];
-  const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<string>("active");
-  const [filteredData, setFilteredData] = useState<T[]>([]);
-  const navigate = useNavigate();
+  const [search, setSearch] = useState(searchValue);
 
-  // Count deleted and active members
-  const deletedMembersCount =
-    data?.filter((row: T) => row.isDeleted).length || 0;
+  const totalPages = Math.ceil(totalItems / perPage) || 1;
 
-  const activeMembersCount =
-    data?.filter((row: T) => !row.isDeleted).length || 0;
-
-  // Filter data based on active tab and search term
-  useEffect(() => {
-    if (data) {
-      // Filter by deleted status based on active tab
-      const tabData = data.filter((row: T) =>
-        activeTab === "active" ? !row.isDeleted : row.isDeleted
-      );
-
-      // Apply search if entered
-      if (search) {
-        const searchLower = search.toLowerCase();
-        setFilteredData(
-          tabData.filter((row: T) => {
-            const name = String(
-              `${row.firstName} ${row.middleName || ""} ${row.lastName}` || ""
-            ).toLowerCase();
-            return name.includes(searchLower);
-          })
-        );
-      } else {
-        setFilteredData(tabData);
-      }
-    }
-  }, [data, activeTab, search]);
-
-  // Handle tab change
-  const handleTabChange = (value: string | null) => {
-    if (value) {
-      setActiveTab(value);
-      setSearch(""); // Clear search when changing tabs
-    }
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
   };
 
-  // Handle search submission
-  const handleSearch = () => {
-    // Filtering is handled in the useEffect
+  const handleSearchSubmit = () => {
+    onSearch(search);
   };
 
-  // Check if member is a family leader (generation 0 and male)
-  const isFamilyLeader = (row: T) => {
-    return row.generation === 0 && row.gender === "male";
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(value);
   };
 
-  const renderTable = (filteredData: T[], isDeletedTab: boolean) => (
-    <Table striped highlightOnHover withTableBorder horizontalSpacing="sm">
-      <Table.Thead>
-        <Table.Tr>
-          <Table.Th>STT</Table.Th>
-          {columns.map((col) => (
-            <Table.Th key={col.key as string}>{col.label}</Table.Th>
-          ))}
-          <Table.Th>Ảnh</Table.Th>
-          <Table.Th>Hành động</Table.Th>
-        </Table.Tr>
-      </Table.Thead>
-      <Table.Tbody>
-        {filteredData.length > 0 ? (
-          filteredData.map((row: T, index: number) => (
-            <Table.Tr key={row.memberId}>
-              <Table.Td>{index + 1}</Table.Td>
-              {columns.map((col) => (
-                <Table.Td key={`${row.memberId}-${col.key as string}`}>
-                  {String(row[col.key] || "")}
-                </Table.Td>
-              ))}
-              <Table.Td>
-                <img
-                  src={
-                    row.gender === "male"
-                      ? "/app/assets/image/male.png"
-                      : "/app/assets/image/female.png"
-                  }
-                  alt="error-loading-image"
-                  className="w-16 h-16 rounded-full border-2 border-gray-200"
-                />
-              </Table.Td>
-              <Table.Td>
-                <Group gap="xs">
-                  {isDeletedTab ? (
-                    // Show only restore icon for deleted members
-                    <ActionIcon color="green" onClick={() => onRestore(row)}>
-                      <IconRestore size={18} />
-                    </ActionIcon>
-                  ) : (
-                    // Show edit and delete icons for active members
-                    <>
-                      <ActionIcon
-                        color="blue"
-                        onClick={() =>
-                          navigate("/detail-member", {
-                            state: {
-                              memberId: row.memberId,
-                            },
-                          })
-                        }
-                      >
-                        <IconEyeglass size={18} />
-                      </ActionIcon>
-                      <ActionIcon color="yellow" onClick={() => onEdit(row)}>
-                        <IconEdit size={18} />
-                      </ActionIcon>
-                      {/* Only show delete button if not a family leader (generation 0 and male) */}
-                      {!isFamilyLeader(row) && (
-                        <ActionIcon color="red" onClick={() => onDelete(row)}>
-                          <IconTrash size={18} />
-                        </ActionIcon>
-                      )}
-                    </>
-                  )}
-                </Group>
-              </Table.Td>
-            </Table.Tr>
-          ))
-        ) : (
-          <Table.Tr>
-            <Table.Td
-              colSpan={columns.length + 3}
-              style={{ textAlign: "center", color: "gray" }}
-            >
-              Không có bản ghi nào!
-            </Table.Td>
-          </Table.Tr>
-        )}
-      </Table.Tbody>
-    </Table>
-  );
+  const formatSubscription = (value: string) => {
+    const mapping: Record<string, string> = {
+      six_people: "Gói cho nhóm 6 người",
+      no_limit: "Gói không giới hạn",
+      fifty_people: "Gói cho nhóm 50 người",
+      thirty_people: "Gói cho nhóm 30 người",
+      fifteen_people: "Gói cho nhóm 15 người",
+    };
+    return mapping[value] || value; // Nếu không tìm thấy, trả về nguyên gốc
+  };
+
+  // Chuyển đổi status thành tiếng Việt
+  const formatStatus = (status: string) => {
+    const statusMapping: Record<string, string> = {
+      pending: "Chờ xử lý",
+      active: "Hoạt động",
+      expired: "Hết hạn",
+      cancelled: "Đã hủy",
+    };
+    return statusMapping[status] || status; // Nếu không tìm thấy, trả về nguyên gốc
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
+  };
 
   return (
     <>
       <Group justify="space-between" mb="md">
         <TextInput
-          placeholder="Tìm kiếm theo tên..."
+          placeholder="Tìm kiếm..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={handleSearchChange}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              handleSearch();
+              handleSearchSubmit();
             }
           }}
           rightSection={
-            <ActionIcon onClick={handleSearch}>
-              <IconSearch size={18} />
+            <ActionIcon onClick={handleSearchSubmit} variant="subtle">
+              <IconSearch size={16} />
             </ActionIcon>
           }
           style={{ flex: 1 }}
@@ -226,48 +126,94 @@ export function TableComponent<
           <Loader />
         </Center>
       ) : (
-        <Tabs
-          defaultValue="active"
-          value={activeTab}
-          onChange={handleTabChange}
-        >
-          <Tabs.List>
-            <Tabs.Tab value="active" leftSection={<IconUsers size={16} />}>
-              Thành viên hoạt động
-              {activeMembersCount > 0 && (
-                <Badge
-                  ml="xs"
-                  color="blue"
-                  size="sm"
-                  variant="filled"
-                  radius="xl"
-                >
-                  {activeMembersCount}
-                </Badge>
-              )}
-            </Tabs.Tab>
-            <Tabs.Tab
-              value="deleted"
-              leftSection={<IconUserOff size={16} />}
-              rightSection={
-                deletedMembersCount > 0 ? (
-                  <Badge color="red" size="sm" variant="filled" radius="xl">
-                    {deletedMembersCount}
-                  </Badge>
-                ) : null
-              }
-            >
-              Thành viên bị xóa
-            </Tabs.Tab>
-          </Tabs.List>
+        <Box style={{ position: "relative", minHeight: "300px" }}>
+          <Table
+            striped
+            highlightOnHover
+            withTableBorder
+            horizontalSpacing="sm"
+          >
+            <Table.Thead>
+              <Table.Tr>
+                {columns.map((col) => (
+                  <Table.Th key={col.key.toString()}>{col.label}</Table.Th>
+                ))}
+                <Table.Th>Hành động</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {data && data.length > 0 ? (
+                data.map((row: T) => (
+                  <Table.Tr key={row.memberId}>
+                    {columns.map((col) => {
+                      // Lấy giá trị và xử lý undefined
+                      let value =
+                        row[col.key] !== undefined ? row[col.key] : "";
 
-          <Tabs.Panel value="active">
-            {renderTable(filteredData, false)}
-          </Tabs.Panel>
-          <Tabs.Panel value="deleted">
-            {renderTable(filteredData, true)}
-          </Tabs.Panel>
-        </Tabs>
+                      // Format từng giá trị theo cột
+                      if (col.key === "price" && value !== "") {
+                        value = formatCurrency(value as unknown as number);
+                      } else if (col.key === "subscription" && value !== "") {
+                        value = formatSubscription(value as unknown as string);
+                      } else if (col.key === "status" && value !== "") {
+                        value = formatStatus(value as unknown as string);
+                      } else if (col.key === "createdAt" && value !== "") {
+                        value = formatDate(value as unknown as string);
+                      }
+
+                      return (
+                        <Table.Td key={`${row.memberId}-${col.key.toString()}`}>
+                          {String(value)}
+                        </Table.Td>
+                      );
+                    })}
+                    <Table.Td key={`${row.memberId}-actions`}>
+                      <Group gap="xs">
+                        {/* Show different actions based on whether it's the active or deleted tab */}
+                        {onEdit && (
+                          <ActionIcon
+                            key={`${row.memberId}-edit`}
+                            color="blue"
+                            onClick={() => onEdit(row)}
+                          >
+                            <IconEdit size={18} />
+                          </ActionIcon>
+                        )}
+                        {onDelete && (
+                          <ActionIcon
+                            key={`${row.memberId}-delete`}
+                            color="red"
+                            onClick={() => onDelete(row)}
+                          >
+                            <IconTrash size={18} />
+                          </ActionIcon>
+                        )}
+                        {onRestore && (
+                          <ActionIcon
+                            key={`${row.memberId}-restore`}
+                            color="green"
+                            onClick={() => onRestore(row)}
+                          >
+                            <IconRecycle size={18} />
+                          </ActionIcon>
+                        )}
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))
+              ) : (
+                <Table.Tr>
+                  <Table.Td
+                    colSpan={columns.length + 1}
+                    style={{ textAlign: "center", color: "gray" }}
+                  >
+                    Không có bản ghi nào!
+                  </Table.Td>
+                </Table.Tr>
+              )}
+            </Table.Tbody>
+          </Table>
+        </Box>
       )}
 
       <Group justify="space-between" align="center" mt="md">
@@ -276,7 +222,9 @@ export function TableComponent<
           <Select
             data={perPageOptions.map((opt) => opt.toString())}
             value={perPage.toString()}
-            onChange={(value) => onPerPageChange(Number(value) || 10)}
+            onChange={(value) => {
+              onPerPageChange(Number(value));
+            }}
             allowDeselect={false}
             w={60}
             style={{ minWidth: "50px", textAlign: "center" }}
@@ -285,7 +233,7 @@ export function TableComponent<
           <span>bản ghi / trang</span>
         </Group>
         <Pagination
-          total={Math.ceil(totalItems / perPage) || 1}
+          total={totalPages}
           value={currentPage}
           onChange={onPageChange}
         />
