@@ -6,7 +6,6 @@ import {
   Avatar,
   Paper,
   Stack,
-  Divider,
   Group,
   ThemeIcon,
   Title,
