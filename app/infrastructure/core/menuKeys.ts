@@ -34,6 +34,11 @@ export const userMenuKeys: MenuItem[] = [
     leftIcon: IconLabelImportant,
     path: AppRoutes.PRIVATE.FAMILY_DEATH_ANNIVESARY,
   },
+  {
+    label: "Tài khoản",
+    leftIcon: IconUserCircle,
+    path: AppRoutes.PRIVATE.Profile,
+  }
 ];
 export const adminMenuKeys: MenuItem[] = [
   {
