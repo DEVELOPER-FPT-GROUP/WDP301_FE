@@ -80,9 +80,6 @@ interface FamilyMember {
   media?: string;
 }
 
-// Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-03-23 04:02:45
-// Current User's Login: HE171216
-
 const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
   media,
   newMemberId,
@@ -95,6 +92,48 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
 }) => {
   // Ref để ẩn nút close
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // State để theo dõi quá trình tự động xử lý
+  const [autoProcessing, setAutoProcessing] = useState(media.length <= 1);
+
+  // Tự động xử lý nếu chỉ có một hoặc không có ảnh
+  useEffect(() => {
+    if (media.length <= 1) {
+      console.log(
+        `[${new Date().toISOString()}] Auto-processing with ${
+          media.length
+        } images`
+      );
+
+      setTimeout(() => {
+        if (media.length === 1) {
+          // Nếu có một ảnh, tự động chọn làm avatar
+          const result: MediaSelectionResult[] = [
+            {
+              id: media[0].ownerId,
+              url: media[0].url,
+              status: "avatar",
+              memberId: newMemberId,
+            },
+          ];
+
+          console.log("Auto-selected single image as avatar:", result);
+          onComplete(result);
+        } else {
+          // Nếu không có ảnh, hoàn thành với mảng rỗng
+          console.log("No images to process, completing");
+          onComplete([]);
+        }
+      }, 100); // Thêm một chút delay để hiển thị LoadingOverlay
+    } else {
+      setAutoProcessing(false);
+    }
+  }, [media, newMemberId, onComplete]);
+
+  // Nếu đang tự động xử lý, hiển thị màn hình loading
+  if (autoProcessing) {
+    return <LoadingOverlay visible />;
+  }
 
   // Định nghĩa các tiêu đề mặc định dựa trên loại modal
   const getDefaultTexts = (): CustomTexts => {
