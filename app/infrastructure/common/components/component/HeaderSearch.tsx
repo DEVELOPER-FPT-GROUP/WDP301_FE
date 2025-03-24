@@ -369,7 +369,7 @@ const HeaderSearch = () => {
                           </Flex>
                           <Text>{fullName}</Text>
                           <Text size="xs" c="dimmed">
-                            {similarity}% match
+                            Trùng khớp: {similarity}
                           </Text>
                         </Flex>
                       </Box>
