@@ -1,6 +1,5 @@
 import {
   Modal,
-  Box,
   Text,
   Stack,
   Title,

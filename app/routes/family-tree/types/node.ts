@@ -5,7 +5,7 @@ export interface Node {
   name: string;
   image?: string;
   gender: "female" | "male";
-  generation?: number;
+  generation: number;
   relationships: Relation[];
   isAlive: boolean;
   dateOfBirth?: string; // Ngày sinh

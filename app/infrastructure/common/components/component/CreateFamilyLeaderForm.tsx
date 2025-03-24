@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   TextInput,
   Button,
@@ -6,7 +6,6 @@ import {
   Stack,
   Switch,
   Textarea,
-  Alert,
   Paper,
   Title,
   LoadingOverlay,
@@ -15,17 +14,20 @@ import {
   Image,
   SimpleGrid,
   ActionIcon,
+  Modal,
+  Text,
 } from "@mantine/core";
 import { IconX, IconUpload } from "@tabler/icons-react";
 import { DateInput } from "@mantine/dates";
 import { useForm, yupResolver } from "@mantine/form";
 import * as Yup from "yup";
-import { IconAlertCircle } from "@tabler/icons-react";
 import { usePostApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import {
   notifyError,
   notifySuccess,
 } from "~/infrastructure/utils/notification/notification";
+import ImageSelectionModal from "./ImageSelectionModal"; // Import ImageSelectionModal
+import { getDataFromToken } from "~/infrastructure/utils/common";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -60,6 +62,34 @@ interface CreateFamilyLeaderFormProps {
   familyId?: string | null;
 }
 
+// Interfaces cho ImageSelectionModal
+interface MediaItem {
+  faceId: string;
+  previewUrl: string;
+  status: "unknown" | "avatar" | "label";
+}
+
+interface MediaSelectionResult {
+  id: string;
+  url: string;
+  status: "avatar" | "label" | "unknown";
+  memberId?: string;
+}
+
+interface ApiResponse {
+  statusCode: number;
+  message: string;
+  data: {
+    memberId: string;
+    familyId: string;
+    // Các trường khác...
+    media: MediaItem[];
+  };
+}
+
+// Current Date and Time (UTC): 2025-03-23 02:53:45
+// User: HE171216
+
 const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
   onSuccess,
   familyId,
@@ -70,6 +100,14 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
   // States for managing images
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [previewImages, setPreviewImages] = useState<any>([]);
+  // State để quản lý hiển thị modal chọn ảnh
+  const [showImageSelection, setShowImageSelection] = useState(false);
+  const [apiResponseData, setApiResponseData] = useState<
+    ApiResponse["data"] | null
+  >(null);
+  const [selectedLeaderMemberId, setSelectedLeaderMemberId] = useState<
+    string | null
+  >(null);
 
   // Function to handle image upload
   const handleImageUpload = (files: File[] | null) => {
@@ -91,7 +129,8 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
     );
     setUploadedFiles((prev) => prev.filter((file) => file !== image.file));
   };
-
+  const dataToken = getDataFromToken();
+  const username = dataToken?.username;
   const form = useForm({
     initialValues: {
       firstName: "",
@@ -111,14 +150,87 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
   const createMutation = usePostApi({
     endpoint: "members/create-family-leader",
     options: {
-      onSuccess: () => {
-        onSuccess();
-        setPreviewImages([]);
-        setUploadedFiles([]);
-        form.reset();
+      onSuccess: (response) => {
+        console.log(
+          "Backend response when creating family leader successfully:",
+          response
+        );
+
+        if (response?.data?.media && response.data.media.length > 1) {
+          setSelectedLeaderMemberId(response.data.memberId);
+          setApiResponseData(response.data);
+          setShowImageSelection(true);
+          setLoading(false);
+        } else {
+          // Nếu không có nhiều ảnh, đóng form và thông báo thành công
+          handleCompletionWithoutImageModal();
+        }
       },
     },
   });
+
+  // Xử lý hoàn thành mà không cần hiển thị modal chọn ảnh
+  const handleCompletionWithoutImageModal = () => {
+    notifySuccess({
+      title: "Thành công",
+      message: "Trưởng họ đã được tạo thành công!",
+    });
+    resetFormData();
+    onSuccess();
+  };
+
+  // Xử lý khi người dùng hoàn thành việc chọn ảnh
+  const handleImageSelectionComplete = (mediaData: MediaSelectionResult[]) => {
+    console.log("Selected media data:", mediaData);
+    notifySuccess({
+      title: "Thành công",
+      message: "Trưởng họ đã được tạo thành công và ảnh đã được xử lý!",
+    });
+    resetFormData();
+    onSuccess();
+  };
+
+  // Xử lý khi người dùng hủy quá trình chọn ảnh
+  const handleImageSelectionCancel = () => {
+    setShowImageSelection(false);
+    setApiResponseData(null);
+
+    notifySuccess({
+      title: "Thành công",
+      message: "Trưởng họ đã được tạo thành công nhưng bỏ qua xử lý ảnh!",
+    });
+
+    resetFormData();
+    onSuccess();
+  };
+
+  // Reset form và dữ liệu ảnh
+  const resetFormData = () => {
+    form.reset();
+    // Thu hồi URL để tránh rò rỉ bộ nhớ
+    previewImages.forEach((img: any) => {
+      if (img.url) {
+        URL.revokeObjectURL(img.url);
+      }
+    });
+    setPreviewImages([]);
+    setUploadedFiles([]);
+    setShowImageSelection(false);
+    setApiResponseData(null);
+    setSelectedLeaderMemberId(null);
+    setError(null);
+  };
+
+  // Dọn dẹp object URL khi component unmount
+  useEffect(() => {
+    return () => {
+      previewImages.forEach((img: any) => {
+        if (img.url) {
+          URL.revokeObjectURL(img.url);
+        }
+      });
+    };
+  }, []);
 
   const handleSubmit = async (values: typeof form.values) => {
     setLoading(true);
@@ -149,7 +261,7 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
 
       // Set generation to 0 for leader
       formData.append("generation", "0");
-
+      formData.append("username", username);
       // Add image files to formData
       if (uploadedFiles.length > 0) {
         uploadedFiles.forEach((file) => {
@@ -159,14 +271,6 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
 
       // Use mutation to send the request instead of fetch
       createMutation.mutate(formData, {
-        onSuccess: () => {
-          // Handle success
-          notifySuccess({
-            title: "Thành công",
-            message: "Trưởng họ đã được tạo thành công!",
-          });
-          setLoading(false);
-        },
         onError: (error: any) => {
           // Handle error
           setError(
@@ -188,154 +292,186 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
     }
   };
 
+  // Nếu đang hiển thị modal chọn ảnh
+  if (showImageSelection && apiResponseData) {
+    return (
+      <Modal
+        opened={true}
+        onClose={handleImageSelectionCancel}
+        title={
+          <Text size="xl" fw={700} c="brown">
+            Xử lý ảnh cho trưởng họ mới
+          </Text>
+        }
+        centered
+        size="xl"
+      >
+        <ImageSelectionModal
+          media={apiResponseData.media}
+          newMemberId={selectedLeaderMemberId || ""}
+          familyId={familyId || null}
+          originalImage={previewImages.length > 0 ? previewImages[0].url : null}
+          onComplete={(result) =>
+            handleImageSelectionComplete(
+              result.verifiedFaces.map((face: any) => ({
+                id: face.id,
+                url: face.url,
+                status: face.status,
+              }))
+            )
+          }
+          onCancel={handleImageSelectionCancel}
+          modalType="add-leader" // Đã thay đổi modalType thành "add-leader"
+        />
+      </Modal>
+    );
+  }
+
   return (
-    <Paper p="lg" withBorder radius="md" pos="relative">
-      <LoadingOverlay
-        visible={loading || createMutation.isPending}
-        overlayProps={{ radius: "md", blur: 2 }}
-      />
-      <Title order={3} mb="md" c="brown" fw={700}>
+    <>
+      <Title order={2} mb="md" style={{ marginTop: "150px" }} c="brown">
         Tạo Trưởng Họ
       </Title>
+      <Text mt="xl" mb="xl" size="xl" c="red" fw={500}>
+        Bạn cần tạo thông tin trưởng họ để bắt đầu xây dựng cây gia phả
+      </Text>
+      <Paper p="lg" withBorder radius="md" pos="relative">
+        <LoadingOverlay
+          visible={loading || createMutation.isPending}
+          overlayProps={{ radius: "md", blur: 2 }}
+        />
+        <Title order={3} mb="md" c="brown" fw={700}>
+          Tạo Trưởng Họ
+        </Title>
 
-      {error && (
-        <Alert
-          icon={<IconAlertCircle size={16} />}
-          title="Lỗi"
-          color="red"
-          mb="md"
-        >
-          {error}
-        </Alert>
-      )}
-
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Stack gap="md">
-          <Group grow>
-            <TextInput
-              label="Họ"
-              placeholder="Nhập họ"
-              required
-              {...form.getInputProps("firstName")}
-            />
-            <TextInput
-              label="Tên đệm"
-              placeholder="Nhập tên đệm"
-              required
-              {...form.getInputProps("middleName")}
-            />
-            <TextInput
-              label="Tên"
-              placeholder="Nhập tên"
-              required
-              {...form.getInputProps("lastName")}
-            />
-          </Group>
-
-          {/* Đã xóa phần Select giới tính, mặc định là nam */}
-
-          <Group grow>
-            <DateInput
-              label="Ngày sinh"
-              placeholder="Chọn ngày sinh"
-              required
-              clearable={false}
-              {...form.getInputProps("dateOfBirth")}
-            />
-            <TextInput
-              label="Nơi sinh"
-              placeholder="Nhập nơi sinh"
-              required
-              {...form.getInputProps("placeOfBirth")}
-            />
-          </Group>
-
-          <Switch
-            label="Còn sống"
-            mt="xs"
-            {...form.getInputProps("isAlive", { type: "checkbox" })}
-          />
-
-          {!form.values.isAlive && (
+        <form onSubmit={form.onSubmit(handleSubmit)}>
+          <Stack gap="md">
             <Group grow>
-              <DateInput
-                label="Ngày mất"
-                placeholder="Chọn ngày mất"
+              <TextInput
+                label="Họ"
+                placeholder="Nhập họ"
                 required
-                clearable={false}
-                {...form.getInputProps("dateOfDeath")}
+                {...form.getInputProps("firstName")}
               />
               <TextInput
-                label="Nơi mất"
-                placeholder="Nhập nơi mất"
+                label="Tên đệm"
+                placeholder="Nhập tên đệm"
                 required
-                {...form.getInputProps("placeOfDeath")}
+                {...form.getInputProps("middleName")}
+              />
+              <TextInput
+                label="Tên"
+                placeholder="Nhập tên"
+                required
+                {...form.getInputProps("lastName")}
               />
             </Group>
-          )}
 
-          <Textarea
-            label="Thông tin tóm tắt"
-            placeholder="Nhập thông tin tóm tắt về trưởng họ"
-            autosize
-            minRows={3}
-            maxRows={5}
-            {...form.getInputProps("shortSummary")}
-          />
+            {/* Đã xóa phần Select giới tính, mặc định là nam */}
 
-          {/* Image upload section */}
-          <FileInput
-            label="Ảnh đại diện"
-            placeholder="Tải lên ảnh"
-            accept="image/png,image/jpeg,image/jpg"
-            multiple
-            leftSection={<IconUpload size={16} />}
-            onChange={handleImageUpload}
-          />
+            <Group grow>
+              <DateInput
+                label="Ngày sinh"
+                placeholder="Chọn ngày sinh"
+                required
+                clearable={false}
+                {...form.getInputProps("dateOfBirth")}
+              />
+              <TextInput
+                label="Nơi sinh"
+                placeholder="Nhập nơi sinh"
+                required
+                {...form.getInputProps("placeOfBirth")}
+              />
+            </Group>
 
-          {/* Image preview section */}
-          {previewImages.length > 0 && (
-            <SimpleGrid cols={3} spacing="md">
-              {previewImages.map((img: any, index: number) => (
-                <Card
-                  key={index}
-                  shadow="sm"
-                  padding="xs"
-                  radius="md"
-                  withBorder
-                >
-                  <ActionIcon
-                    color="red"
-                    variant="light"
-                    size="sm"
-                    style={{ position: "absolute", top: 4, right: 4 }}
-                    onClick={() => handleRemoveImage(img)}
-                  >
-                    <IconX size={16} />
-                  </ActionIcon>
-                  <Image
-                    src={img.url}
-                    alt={`Hình ảnh ${index + 1}`}
+            <Switch
+              label="Còn sống"
+              mt="xs"
+              {...form.getInputProps("isAlive", { type: "checkbox" })}
+            />
+
+            {!form.values.isAlive && (
+              <Group grow>
+                <DateInput
+                  label="Ngày mất"
+                  placeholder="Chọn ngày mất"
+                  required
+                  clearable={false}
+                  {...form.getInputProps("dateOfDeath")}
+                />
+                <TextInput
+                  label="Nơi mất"
+                  placeholder="Nhập nơi mất"
+                  required
+                  {...form.getInputProps("placeOfDeath")}
+                />
+              </Group>
+            )}
+
+            <Textarea
+              label="Thông tin tóm tắt"
+              placeholder="Nhập thông tin tóm tắt về trưởng họ"
+              autosize
+              minRows={3}
+              maxRows={5}
+              {...form.getInputProps("shortSummary")}
+            />
+
+            {/* Image upload section */}
+            <FileInput
+              label="Ảnh đại diện"
+              placeholder="Tải lên ảnh"
+              accept="image/png,image/jpeg,image/jpg"
+              multiple
+              leftSection={<IconUpload size={16} />}
+              onChange={handleImageUpload}
+            />
+
+            {/* Image preview section */}
+            {previewImages.length > 0 && (
+              <SimpleGrid cols={3} spacing="md">
+                {previewImages.map((img: any, index: number) => (
+                  <Card
+                    key={index}
+                    shadow="sm"
+                    padding="xs"
                     radius="md"
-                    height={150}
-                  />
-                </Card>
-              ))}
-            </SimpleGrid>
-          )}
+                    withBorder
+                  >
+                    <ActionIcon
+                      color="red"
+                      variant="light"
+                      size="sm"
+                      style={{ position: "absolute", top: 4, right: 4 }}
+                      onClick={() => handleRemoveImage(img)}
+                    >
+                      <IconX size={16} />
+                    </ActionIcon>
+                    <Image
+                      src={img.url}
+                      alt={`Hình ảnh ${index + 1}`}
+                      radius="md"
+                      height={150}
+                    />
+                  </Card>
+                ))}
+              </SimpleGrid>
+            )}
 
-          <Group justify="flex-end" mt="md">
-            <Button
-              type="submit"
-              loading={createMutation.isPending}
-              color="brown"
-            >
-              Tạo Trưởng Họ
-            </Button>
-          </Group>
-        </Stack>
-      </form>
-    </Paper>
+            <Group justify="flex-end" mt="md">
+              <Button
+                type="submit"
+                loading={createMutation.isPending}
+                color="brown"
+              >
+                Tạo Trưởng Họ
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      </Paper>
+    </>
   );
 };
 

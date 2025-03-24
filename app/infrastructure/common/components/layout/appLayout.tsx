@@ -1,25 +1,8 @@
-import {
-  ActionIcon,
-  AppShell,
-  Box,
-  Burger,
-  Button,
-  FileButton,
-  Flex,
-  Group,
-  Paper,
-  TextInput,
-} from "@mantine/core";
+import { ActionIcon, AppShell, Burger, Group } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import {
-  IconBrandMantine,
-  IconLogout,
-  IconSearch,
-  IconUpload,
-} from "@tabler/icons-react";
+import { IconBrandMantine, IconLogout } from "@tabler/icons-react";
 import { jwtDecode } from "jwt-decode";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
 import MenuItemsRenderer from "~/infrastructure/common/components/layout/menuItems";
 import { Constants } from "~/infrastructure/core/constants";
 import {

@@ -18,7 +18,7 @@ function Home() {
     queryKey: ["traffic"],
     endpoint,
   });
-  console.log(data);
+  // console.log(data);
 
   return (
     <Container size="xl">

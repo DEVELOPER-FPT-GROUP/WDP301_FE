@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   TextInput,
   Button,
@@ -12,7 +12,6 @@ import {
   FileInput,
   Card,
   Image,
-  SimpleGrid,
   ActionIcon,
   Modal,
 } from "@mantine/core";
@@ -26,6 +25,9 @@ import {
   notifyError,
   notifySuccess,
 } from "~/infrastructure/utils/notification/notification";
+import ImageSelectionModal from "./ImageSelectionModal"; // Import ImageSelectionModal
+import { Constants } from "~/infrastructure/core/constants";
+import { jwtDecode } from "jwt-decode";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -64,6 +66,41 @@ interface AddSpouseModalProps {
   name: string;
 }
 
+// Interfaces cho ImageSelectionModal
+interface MediaItem {
+  faceId: string;
+  previewUrl: string;
+  status: "unknown" | "avatar" | "label";
+}
+
+interface MediaSelectionResult {
+  faceId: string;
+  status: "avatar" | "label" | "unknown";
+  memberId?: string;
+}
+
+interface ApiResponse {
+  statusCode: number;
+  message: string;
+  data: {
+    memberId: string;
+    familyId: string;
+    // Các trường khác...
+    media: MediaItem[];
+  };
+}
+const getFamilyIdFromToken = () => {
+  const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
+  if (!token) return null;
+
+  try {
+    const decoded: any = jwtDecode(token);
+    return decoded.familyId;
+  } catch (error) {
+    console.error("Lỗi khi giải mã token:", error);
+    return null;
+  }
+};
 const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
   opened,
   onClose,
@@ -75,29 +112,41 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // States for managing images
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [previewImages, setPreviewImages] = useState<any>([]);
+  // States for managing image - đã thay đổi thành một ảnh duy nhất
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  // Function to handle image upload
-  const handleImageUpload = (files: File[] | null) => {
-    if (!files) return;
-    const newPreviewUrls = files.map((file) => ({
-      url: URL.createObjectURL(file),
-      file: file,
-      isNew: true,
-    }));
+  // State để quản lý hiển thị modal chọn ảnh
+  const [showImageSelection, setShowImageSelection] = useState(false);
+  const [apiResponseData, setApiResponseData] = useState<
+    ApiResponse["data"] | null
+  >(null);
+  const familyId = getFamilyIdFromToken();
 
-    setPreviewImages((prev: any) => [...prev, ...newPreviewUrls]);
-    setUploadedFiles((prev: File[]) => [...prev, ...files]);
+  // Function to handle image upload - đã cập nhật cho một ảnh
+  const handleImageUpload = (file: File | null) => {
+    if (!file) {
+      setUploadedFile(null);
+      setPreviewImage(null);
+      return;
+    }
+
+    // Thu hồi URL trước đó để tránh rò rỉ bộ nhớ
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage);
+    }
+
+    setPreviewImage(URL.createObjectURL(file));
+    setUploadedFile(file);
   };
 
   // Function to handle image removal
-  const handleRemoveImage = (image: any) => {
-    setPreviewImages((prev: any) =>
-      prev.filter((img: any) => img.url !== image.url)
-    );
-    setUploadedFiles((prev) => prev.filter((file) => file !== image.file));
+  const handleRemoveImage = () => {
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage);
+    }
+    setPreviewImage(null);
+    setUploadedFile(null);
   };
 
   const form = useForm({
@@ -118,21 +167,92 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
   const createSpouseMutation = usePostApi({
     endpoint: "members/add-spouse",
     options: {
-      onSuccess: () => {
-        onSuccess();
-        resetForm();
+      onSuccess: (response) => {
+        console.log(
+          "Backend response when adding spouse successfully:",
+          response
+        );
+        if (response?.data?.media && response.data.media.length > 1) {
+          setApiResponseData(response.data);
+          setShowImageSelection(true);
+          setLoading(false);
+        } else {
+          // Nếu không có nhiều ảnh, đóng modal và thông báo thành công
+          handleCompletionWithoutImageModal();
+        }
       },
     },
   });
 
-  const resetForm = () => {
-    form.reset();
-    setPreviewImages([]);
-    setUploadedFiles([]);
-    setError(null);
+  // Xử lý hoàn thành mà không cần hiển thị modal chọn ảnh
+  const handleCompletionWithoutImageModal = () => {
+    notifySuccess({
+      title: "Thành công",
+      message: `Đã thêm ${gender === "male" ? "vợ" : "chồng"} thành công!`,
+    });
+    resetForm();
+    onSuccess();
+    onClose();
   };
 
+  // Xử lý khi người dùng hoàn thành việc chọn ảnh
+  const handleImageSelectionComplete = (result: {
+    verifiedFaces: MediaSelectionResult[];
+  }) => {
+    console.log("Selected media data:", result.verifiedFaces);
+    notifySuccess({
+      title: "Thành công",
+      message: `Đã thêm ${
+        gender === "male" ? "vợ" : "chồng"
+      } thành công và xử lý ảnh!`,
+    });
+    handleFinalClose();
+  };
+
+  // Xử lý khi người dùng hủy quá trình chọn ảnh
+  const handleImageSelectionCancel = () => {
+    setShowImageSelection(false);
+    setApiResponseData(null);
+
+    notifySuccess({
+      title: "Thành công",
+      message: `Đã thêm ${
+        gender === "male" ? "vợ" : "chồng"
+      } thành công nhưng bỏ qua xử lý ảnh!`,
+    });
+
+    handleFinalClose();
+  };
+
+  // Đóng modal và làm mới dữ liệu
+  const handleFinalClose = () => {
+    resetForm();
+    onSuccess();
+    onClose();
+  };
+
+  const resetForm = () => {
+    form.reset();
+    // Xóa ảnh
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage);
+    }
+    setPreviewImage(null);
+    setUploadedFile(null);
+    setError(null);
+    setShowImageSelection(false);
+    setApiResponseData(null);
+  };
+
+  // Xử lý đóng modal trong mọi trường hợp
   const handleClose = () => {
+    // Nếu đang hiển thị modal chọn ảnh, xử lý hủy quá trình chọn ảnh
+    if (showImageSelection) {
+      handleImageSelectionCancel();
+      return;
+    }
+
+    // Nếu không, thực hiện đóng modal bình thường
     resetForm();
     onClose();
   };
@@ -161,29 +281,13 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
         }
       });
 
-      // Thêm file ảnh vào formData
-      if (uploadedFiles.length > 0) {
-        uploadedFiles.forEach((file) => {
-          formData.append("files", file);
-        });
+      // Thêm file ảnh vào formData - đã thay đổi thành một file
+      if (uploadedFile) {
+        formData.append("files", uploadedFile);
       }
-      // console.log("formData", formData);
-      console.log("FormData entries:");
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ": " + pair[1]);
-      }
+
       // Sử dụng mutation để gửi request
       createSpouseMutation.mutate(formData, {
-        onSuccess: () => {
-          notifySuccess({
-            title: "Thành công",
-            message: `Đã thêm ${
-              gender === "male" ? "vợ" : "chồng"
-            } thành công!`,
-          });
-          setLoading(false);
-          handleClose();
-        },
         onError: (error: any) => {
           setError(
             error?.response?.data?.message ||
@@ -208,6 +312,50 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
       setLoading(false);
     }
   };
+
+  // Dọn dẹp object URL khi component unmount
+  useEffect(() => {
+    return () => {
+      if (previewImage) {
+        URL.revokeObjectURL(previewImage);
+      }
+    };
+  }, []);
+
+  // Nếu đang hiển thị modal chọn ảnh
+  if (showImageSelection && apiResponseData) {
+    return (
+      <Modal
+        opened={opened}
+        onClose={handleClose}
+        title={
+          <Text size="xl" fw={700} c="brown">
+            Xử lý ảnh cho {gender === "male" ? "vợ" : "chồng"} mới
+          </Text>
+        }
+        centered
+        size="xl"
+      >
+        <ImageSelectionModal
+          media={apiResponseData.media}
+          newMemberId={apiResponseData.memberId}
+          familyId={familyId}
+          originalImage={previewImage}
+          onComplete={handleImageSelectionComplete}
+          onCancel={handleImageSelectionCancel}
+          modalType="add-spouse"
+          customTexts={{
+            selectAvatarTitle: `Chọn ảnh đại diện cho ${
+              gender === "male" ? "vợ" : "chồng"
+            } mới`,
+            selectAvatarDescription: `Vui lòng chọn một ảnh để làm ảnh đại diện cho ${
+              gender === "male" ? "vợ" : "chồng"
+            } mới.`,
+          }}
+        />
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -309,45 +457,43 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
             {...form.getInputProps("shortSummary")}
           />
 
-          {/* Image upload section */}
+          {/* Phần upload ảnh - đã điều chỉnh cho một ảnh */}
           <FileInput
             label="Ảnh đại diện"
             placeholder="Tải lên ảnh"
             accept="image/png,image/jpeg,image/jpg"
-            multiple
             leftSection={<IconUpload size={16} />}
             onChange={handleImageUpload}
+            value={uploadedFile}
           />
 
-          {/* Image preview section */}
-          {previewImages.length > 0 && (
-            <SimpleGrid cols={3} spacing="md">
-              {previewImages.map((img: any, index: number) => (
-                <Card
-                  key={index}
-                  shadow="sm"
-                  padding="xs"
-                  radius="md"
-                  withBorder
-                >
-                  <ActionIcon
-                    color="red"
-                    variant="light"
-                    size="sm"
-                    style={{ position: "absolute", top: 4, right: 4 }}
-                    onClick={() => handleRemoveImage(img)}
-                  >
-                    <IconX size={16} />
-                  </ActionIcon>
-                  <Image
-                    src={img.url}
-                    alt={`Hình ảnh ${index + 1}`}
-                    radius="md"
-                    height={150}
-                  />
-                </Card>
-              ))}
-            </SimpleGrid>
+          {/* Phần xem trước ảnh - đã điều chỉnh cho một ảnh, căn lề trái */}
+          {previewImage && (
+            <Card
+              shadow="sm"
+              padding="xs"
+              radius="md"
+              withBorder
+              w={150}
+              style={{ marginLeft: 0 }}
+            >
+              <ActionIcon
+                color="red"
+                variant="light"
+                size="sm"
+                style={{ position: "absolute", top: 4, right: 4 }}
+                onClick={handleRemoveImage}
+              >
+                <IconX size={16} />
+              </ActionIcon>
+              <Image
+                src={previewImage}
+                alt="Ảnh đại diện"
+                radius="md"
+                height={120}
+                fit="contain"
+              />
+            </Card>
           )}
 
           <Group justify="flex-end" mt="md">

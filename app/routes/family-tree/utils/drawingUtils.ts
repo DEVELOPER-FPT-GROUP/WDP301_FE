@@ -1,7 +1,11 @@
 import { fabric } from "fabric";
 import type { Node, Relation } from "../types/node";
 import { NodeGroup } from "../components/NodeGroup";
-import { defaultImageUrl } from "../constants/defaults";
+import {
+  defaultFemaleImageUrl,
+  defaultImageUrl,
+  defaultMaleImageUrl,
+} from "../constants/defaults";
 import {
   lineStyles,
   nodeRadius,
@@ -38,7 +42,15 @@ export const createNode = async (
   imageUrl: string | undefined,
   node: Node
 ) => {
-  imageUrl = imageUrl || defaultImageUrl;
+  if (!imageUrl) {
+    if (node.gender === "male") {
+      imageUrl = defaultMaleImageUrl;
+    } else if (node.gender === "female") {
+      imageUrl = defaultFemaleImageUrl;
+    } else {
+      imageUrl = defaultImageUrl;
+    }
+  }
 
   // Thiết lập màu sắc dựa trên giới tính
   let fillColor = "#FFFFFF";

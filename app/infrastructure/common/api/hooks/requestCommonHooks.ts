@@ -14,6 +14,7 @@ interface UseGetApiProps<TResponse> {
   urlParams?: Record<string, string | number> | null;
   queryParams?: Record<string, string | number | boolean | undefined> | null;
   options?: QueryOptions<any, any, TResponse>;
+  enabled?: boolean; // Add this line to support the enabled flag
 }
 
 interface UseMutationApiProps<TRequest, TResponse> {
@@ -36,6 +37,7 @@ export const useGetApi = <TResponse = any>({
   urlParams = null,
   queryParams = null,
   options = {},
+  enabled = true, // Default to true to maintain backward compatibility
 }: UseGetApiProps<TResponse>) => {
   const { axiosInstance, newAbortSignal } = useAxios();
 
@@ -51,7 +53,8 @@ export const useGetApi = <TResponse = any>({
       );
       return response.data;
     },
-    ...options,
+    enabled, // Pass the enabled flag to useQuery
+    ...options, // This should come after enabled to allow options to override it if needed
   });
 };
 

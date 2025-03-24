@@ -38,7 +38,7 @@ export const userMenuKeys: MenuItem[] = [
     label: "Tài khoản",
     leftIcon: IconUserCircle,
     path: AppRoutes.PRIVATE.Profile,
-  }
+  },
 ];
 export const adminMenuKeys: MenuItem[] = [
   {
@@ -60,6 +60,11 @@ export const adminMenuKeys: MenuItem[] = [
     label: "Quản lý ngày giỗ",
     leftIcon: IconGrave2,
     path: AppRoutes.PRIVATE.MANAGE_FAMILY_DEATH,
+  },
+  {
+    label: "Tài khoản",
+    leftIcon: IconUserCircle,
+    path: AppRoutes.PRIVATE.Profile,
   },
 ];
 
@@ -83,5 +88,10 @@ export const systemAdminMenuKeys: MenuItem[] = [
     label: "Quản lý đơn hàng",
     leftIcon: IconReceiptDollar,
     path: AppRoutes.PRIVATE.MANAGE_ORDER,
-  }
+  },
+  // {
+  //   label: "Tài khoản",
+  //   leftIcon: IconUserCircle,
+  //   path: AppRoutes.PRIVATE.Profile,
+  // },
 ];

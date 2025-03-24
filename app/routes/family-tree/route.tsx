@@ -33,69 +33,57 @@ const TreePage: React.FC = () => {
   const [isAddChildModalOpen, setIsAddChildModalOpen] = useState(false);
   const [nodeForAddChild, setNodeForAddChild] = useState<Node | null>(null);
 
-  // Add state for edit modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editMemberId, setEditMemberId] = useState<string | null>(null);
 
-  // Safely get dataToken and handle potential null
   const dataToken = useMemo(() => {
     try {
       const token = getDataFromToken();
-      return token || { familyId: null, role: null };
+      return token || { familyId: null, role: null, familyName: null };
     } catch (error) {
       console.error("Error getting token data:", error);
-      return { familyId: null, role: null };
+      return { familyId: null, role: null, familyName: null };
     }
   }, []);
 
-  const { data, isSuccess, isLoading, refetch } = useGetApi({
+  const { data, isSuccess, isLoading, refetch, isFetching } = useGetApi({
     queryKey: ["family-tree", dataToken.familyId],
     endpoint: "members/get-members-in-family/:id",
     urlParams: { id: dataToken.familyId },
   });
 
-  // Format data from API to handle media array and convert to image property
+  // Check if data is being loaded (initial load or refetch)
+  const isDataLoading = isLoading || isFetching;
+
+  // Format data từ API và convert media sang image nếu có
   const formattedRoot = useMemo(() => {
-    // If API data exists, process it and use that instead
     if (isSuccess && data && data.data) {
-      // Deep clone and format the data
       const processNode = (node: any): Node => {
         const processedNode = { ...node };
 
-        // Convert media to image if it exists and has elements
         if (node.media && Array.isArray(node.media) && node.media.length > 0) {
           processedNode.image = node.media[0];
         }
 
-        // Process relationships recursively
         if (node.relationships && Array.isArray(node.relationships)) {
           processedNode.relationships = node.relationships.map((rel: any) => {
             const processedRel = { ...rel };
-
-            // Process partner
             if (rel.partner) {
               processedRel.partner = processNode(rel.partner);
             }
-
-            // Process children
             if (rel.children && Array.isArray(rel.children)) {
               processedRel.children = rel.children.map((child: any) =>
                 processNode(child)
               );
             }
-
             return processedRel;
           });
         }
-
         return processedNode;
       };
 
-      // Process the entire tree
       return processNode(data.data);
     }
-
-    // Return null if API data is not available
     return null;
   }, [data, isSuccess]);
 
@@ -105,74 +93,105 @@ const TreePage: React.FC = () => {
     setIsInfoPanelOpen(true);
   };
 
-  // Clone cấu trúc cây và thêm hàm onClick để bắt sự kiện
+  // Hàm đệ quy để clone cây và thêm hàm onClick,
+  // đồng thời gán thêm thông tin cha (parent) và quan hệ của cha (parentRelation) cho các node partner & children.
   const enhancedRoot = useMemo(() => {
-    // Nếu không có dữ liệu, trả về null
     if (!formattedRoot) return null;
 
-    // Hàm đệ quy để thêm onClick cho tất cả các node
-    const addOnClick = (node: Node): Node => {
-      // Tạo bản sao của node
-      const nodeCopy = { ...node };
+    const addOnClick = (
+      node: Node,
+      parent?: Node,
+      parentRelation?: any
+    ): Node => {
+      // Tạo bản sao của node và gán thêm thông tin parent
+      const nodeCopy = { ...node, parent, parentRelation };
 
-      // Thêm/ghi đè hàm onClick
       nodeCopy.onClick = (clickedNode) => {
         handleNodeClick(clickedNode);
-        // Gọi hàm onClick gốc nếu có
         if (node.onClick) node.onClick(clickedNode);
       };
 
-      // Xử lý đệ quy cho các mối quan hệ và con cháu
       if (nodeCopy.relationships) {
         nodeCopy.relationships = nodeCopy.relationships.map((rel) => {
           const relCopy = { ...rel };
 
-          // Xử lý partner
+          // Nếu có partner, truyền nodeCopy làm parent cho partner
           if (relCopy.partner) {
-            relCopy.partner = addOnClick(relCopy.partner);
+            relCopy.partner = addOnClick(relCopy.partner, nodeCopy, relCopy);
           }
 
-          // Xử lý children
+          // Các con sẽ được gán thông tin parent là node hiện tại và parentRelation là relCopy.
           if (relCopy.children) {
             relCopy.children = relCopy.children.map((child) =>
-              addOnClick(child)
+              addOnClick(child, nodeCopy, relCopy)
             );
           }
-
           return relCopy;
         });
       }
-
       return nodeCopy;
     };
 
-    // Trả về cây đã được nâng cao
     return addOnClick(formattedRoot);
   }, [formattedRoot]);
 
+  // Cập nhật selectedNode khi dữ liệu mới được load
+  useEffect(() => {
+    if (isSuccess && data && data.data && selectedNode) {
+      const findNodeById = (node: any, id: any): any => {
+        if (node.id === id) return node;
+        if (node.relationships) {
+          for (const rel of node.relationships) {
+            if (rel.partner && rel.partner.id === id) {
+              return rel.partner;
+            }
+            if (rel.children) {
+              for (const child of rel.children) {
+                const found = findNodeById(child, id);
+                if (found) return found;
+              }
+            }
+          }
+        }
+        return null;
+      };
+
+      const updatedNode = findNodeById(data.data, selectedNode.id);
+      if (updatedNode) {
+        const processNode = (node: any): Node => {
+          const processedNode = { ...node };
+          if (
+            node.media &&
+            Array.isArray(node.media) &&
+            node.media.length > 0
+          ) {
+            processedNode.image = node.media[0];
+          }
+          return processedNode;
+        };
+        setSelectedNode(processNode(updatedNode));
+      }
+    }
+  }, [data, isSuccess, selectedNode?.id]);
+
   const handleFamilyLeaderCreated = () => {
-    // After creating a family leader, refresh the data
     refetch();
   };
 
-  // Hàm đóng cửa sổ thông tin
   const closeInfoPanel = () => {
     setIsInfoPanelOpen(false);
   };
 
-  // Hàm xử lý thêm vợ/chồng
   const handleAddSpouse = (node: Node) => {
     setNodeForAddSpouse(node);
     setIsAddSpouseModalOpen(true);
   };
 
-  // Hàm xử lý thêm con
   const handleAddChild = (node: Node) => {
     setNodeForAddChild(node);
     setIsAddChildModalOpen(true);
   };
 
-  // Hàm xử lý xem chi tiết node
   const handleViewNode = (node: Node) => {
     navigate("/detail-member", {
       state: {
@@ -181,14 +200,12 @@ const TreePage: React.FC = () => {
     });
   };
 
-  // Update handleEditNode to open the edit modal
   const handleEditNode = (node: Node) => {
     console.log("Chỉnh sửa node:", node);
     setEditMemberId(String(node.id));
     setIsEditModalOpen(true);
   };
 
-  // Hàm mở xác nhận xóa node
   const handleDeleteNode = (node: Node) => {
     setNodeToDelete(node);
     setIsDeleteModalOpen(true);
@@ -214,7 +231,6 @@ const TreePage: React.FC = () => {
     [canvasSize]
   );
 
-  // If there's no familyId, we need to create a family leader
   if (!dataToken.familyId) {
     return (
       <div style={{ padding: "2rem" }}>
@@ -229,8 +245,7 @@ const TreePage: React.FC = () => {
 
   return (
     <div ref={canvasContainerRef} style={{ width: "100%", height: "100vh" }}>
-      {/* Chỉ hiển thị tiêu đề "Cây gia phả" khi có dữ liệu */}
-      {enhancedRoot && (
+      {enhancedRoot && !isDataLoading && (
         <Group justify="space-between" align="center" mb="md">
           <Group>
             <h1>
@@ -244,48 +259,42 @@ const TreePage: React.FC = () => {
           </Button>
         </Group>
       )}
-      {isLoading ? (
+
+      {isDataLoading ? (
         <Center style={{ width: "100%", height: "70vh" }}>
           <Loader size="xl" />
         </Center>
-      ) : !enhancedRoot ? (
+      ) : isSuccess && data && data.data === null ? (
         <Center style={{ width: "100%", height: "70vh" }}>
           <div
             style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}
           >
-            <Title order={2} mb="md">
-              Tạo Trưởng Họ
-            </Title>
-            <Text mt="xl" mb="xl" size="xl" c="red" fw={500}>
-              Bạn cần tạo thông tin trưởng họ để bắt đầu xây dựng cây gia phả
-            </Text>
             <CreateFamilyLeaderForm
               onSuccess={handleFamilyLeaderCreated}
               familyId={dataToken.familyId}
             />
           </div>
         </Center>
-      ) : (
+      ) : enhancedRoot ? (
         <FamilyTree root={enhancedRoot} options={treeOptions} />
-      )}
+      ) : null}
+
       <DownloadModal
         isOpen={isModalOpen}
         onClose={closeModal}
         canvasId="canvas"
       />
-      {isInfoPanelOpen &&
-        selectedNode &&
-        dataToken.role !== "family_member" && (
-          <InfoPanel
-            node={selectedNode}
-            onClose={closeInfoPanel}
-            onAddSpouse={handleAddSpouse}
-            onAddChild={handleAddChild}
-            onDeleteNode={handleDeleteNode}
-            onEditNode={handleEditNode}
-            onViewNode={handleViewNode}
-          />
-        )}
+      {isInfoPanelOpen && selectedNode && !isDataLoading && (
+        <InfoPanel
+          node={selectedNode}
+          onClose={closeInfoPanel}
+          onAddSpouse={handleAddSpouse}
+          onAddChild={handleAddChild}
+          onDeleteNode={handleDeleteNode}
+          onEditNode={handleEditNode}
+          onViewNode={handleViewNode}
+        />
+      )}
       {nodeForAddSpouse && (
         <AddSpouseModal
           opened={isAddSpouseModalOpen}
@@ -294,7 +303,7 @@ const TreePage: React.FC = () => {
           gender={nodeForAddSpouse.gender}
           onSuccess={() => {
             setIsAddSpouseModalOpen(false);
-            refetch(); // Để cập nhật dữ liệu sau khi thêm thành công
+            refetch();
           }}
           name={nodeForAddSpouse.name}
         />
@@ -307,7 +316,7 @@ const TreePage: React.FC = () => {
           name={nodeForAddChild.name}
           onSuccess={() => {
             setIsAddChildModalOpen(false);
-            refetch(); // To refresh the data after adding a child
+            refetch();
           }}
         />
       )}
@@ -324,7 +333,6 @@ const TreePage: React.FC = () => {
           }}
         />
       )}
-      {/* Only render EditDetailMemberModal when editMemberId exists */}
       {editMemberId && (
         <EditDetailMemberModal
           opened={isEditModalOpen}
