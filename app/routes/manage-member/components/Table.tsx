@@ -15,7 +15,9 @@ import {
   IconTrash,
   IconRecycle,
   IconSearch,
+  IconEyeBolt,
 } from "@tabler/icons-react";
+import { useNavigate } from "react-router";
 
 interface TableProps<T> {
   columns: { key: keyof T; label: string }[];
@@ -33,7 +35,9 @@ interface TableProps<T> {
   onRestore?: (row: T) => void; // For deleted members
 }
 
-export function TableComponent<T extends { memberId: string }>({
+export function TableComponent<
+  T extends { memberId: string; gender?: string; generation?: number }
+>({
   columns,
   data,
   isLoading,
@@ -50,7 +54,7 @@ export function TableComponent<T extends { memberId: string }>({
 }: TableProps<T>) {
   const perPageOptions = [10, 20, 50];
   const [search, setSearch] = useState(searchValue);
-
+  const navigate = useNavigate();
   const totalPages = Math.ceil(totalItems / perPage) || 1;
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,6 +183,22 @@ export function TableComponent<T extends { memberId: string }>({
                             <IconEdit size={18} />
                           </ActionIcon>
                         )}
+                        {!(row.gender === "male" && row.generation === 0) && (
+                          <ActionIcon
+                            key={`${row.memberId}-edit`}
+                            color="yellow"
+                            onClick={() => {
+                              navigate("/detail-member", {
+                                state: {
+                                  memberId: row.memberId,
+                                },
+                              });
+                            }}
+                          >
+                            <IconEyeBolt size={18} />
+                          </ActionIcon>
+                        )}
+
                         {onDelete && (
                           <ActionIcon
                             key={`${row.memberId}-delete`}
