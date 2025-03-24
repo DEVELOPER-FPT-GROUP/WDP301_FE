@@ -35,6 +35,7 @@ const getMemberIdFromToken = () => {
 
   try {
     const decoded: any = jwtDecode(token);
+    console.log("decoded", decoded.memberId);
     return decoded.memberId;
   } catch (error) {
     console.error("Lỗi khi giải mã token:", error);
@@ -60,6 +61,7 @@ const InfoItem = ({ label, value }: { label: string; value: string }) => (
 
 const Profile = () => {
   const memberId = getMemberIdFromToken();
+
   const { data } = useGetApi({
     queryKey: ["member", memberId],
     endpoint: "members/get-member-details/:id",
@@ -79,29 +81,8 @@ const Profile = () => {
     string | null
   >(null);
 
-  if (!user) return null;
-
-  const fullName = formatName(user);
-  const gender = user.gender === "male" ? "Nam" : "Nữ";
-  const status = user.isAlive ? "Còn sống" : "Đã mất";
-  const generation = user.generation ?? "Không rõ";
-  const dob = user.dateOfBirth
-    ? dayjs(user.dateOfBirth).format("DD/MM/YYYY")
-    : "Không rõ";
-  const pob = user.placeOfBirth || "Không rõ";
-
-  const father = user.parent?.father;
-  const mother = user.parent?.mother;
-
-  const formatParent = (p: any) => {
-    if (!p) return "Không rõ";
-    return `${formatName(p)} (${p.gender === "male" ? "Cha" : "Mẹ"} - ${
-      p.isAlive ? "Còn sống" : "Đã mất"
-    })`;
-  };
-
   const { mutate: changePasswordApi } = usePutApi({
-    endpoint: `accounts/change-password/${user.memberId}`,
+    endpoint: `accounts/change-password/${user?.memberId}`,
   });
 
   const handleChangePassword = () => {
@@ -140,7 +121,7 @@ const Profile = () => {
         onSuccess: () => {
           notifySuccess({
             title: "Thành công",
-            message: "Đổi mật khẻ thành công!",
+            message: "Đổi mật khẩu thành công!",
           });
           setModalOpened(false);
           setOldPassword("");
@@ -153,6 +134,27 @@ const Profile = () => {
         },
       }
     );
+  };
+
+  if (!user) return null;
+
+  const fullName = formatName(user);
+  const gender = user.gender === "male" ? "Nam" : "Nữ";
+  const status = user.isAlive ? "Còn sống" : "Đã mất";
+  const generation = user.generation ?? "Không rõ";
+  const dob = user.dateOfBirth
+    ? dayjs(user.dateOfBirth).format("DD/MM/YYYY")
+    : "Không rõ";
+  const pob = user.placeOfBirth || "Không rõ";
+
+  const father = user.parent?.father;
+  const mother = user.parent?.mother;
+
+  const formatParent = (p: any) => {
+    if (!p) return "Không rõ";
+    return `${formatName(p)} (${p.gender === "male" ? "Cha" : "Mẹ"} - ${
+      p.isAlive ? "Còn sống" : "Đã mất"
+    })`;
   };
 
   return (
