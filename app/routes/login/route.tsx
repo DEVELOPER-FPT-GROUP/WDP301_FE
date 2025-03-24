@@ -13,6 +13,7 @@ import { z } from "zod";
 import useLogin from "~/infrastructure/api/hooks/auth/useLogin";
 import { AppRoutes } from "~/infrastructure/core/AppRoutes";
 import { Constants } from "~/infrastructure/core/constants";
+import { getDataFromToken } from "~/infrastructure/utils/common";
 
 export const meta = () => {
   return [{ title: "Đăng nhập" }];
@@ -22,11 +23,18 @@ const Login = () => {
   const navigate = useNavigate();
 
   const { mutate: loginRequest, isPending } = useLogin({
-    onSuccess: (data) => {
-      localStorage.setItem(Constants.API_ACCESS_TOKEN_KEY, data.accessToken);
-      localStorage.setItem(Constants.API_REFRESH_TOKEN_KEY, data.refreshToken);
-      localStorage.setItem(Constants.API_ROLE, "FAMILY_MEMBER");
-      navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
+    onSuccess: (data: any) => {
+      localStorage.setItem(
+        Constants.API_ACCESS_TOKEN_KEY,
+        data.data.accessToken
+      );
+      const dataToken = getDataFromToken();
+      if (dataToken.role == "system_admin") {
+        navigate(AppRoutes.PRIVATE.DASHBOARD, { replace: true });
+      } else {
+        navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
+      }
+      // navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
     },
   });
 
@@ -46,13 +54,7 @@ const Login = () => {
   });
 
   const handleSubmit = (values: TransformedValues<typeof form>) => {
-    console.log(values);
-
-    // loginRequest(values); // mở comment dòng này khi code thật
-
-    // Khi code thì comment đoạn dưới này lại vì đây là code giả lập login
-    localStorage.setItem(Constants.API_ACCESS_TOKEN_KEY, "123");
-    window.location.href = "/family-tree";
+    loginRequest(values);
   };
   return (
     <Container
@@ -76,7 +78,14 @@ const Login = () => {
             <div className="text-center mb-8 max-w-lg">
               <h1 className="text-3xl font-bold uppercase text-gray-800">
                 Xin chào bạn đến với{" "}
-                <span className="text-blue-600">Gia Phả Thông Minh</span>
+                <span
+                  className="text-blue-600"
+                  onClick={() => {
+                    navigate(AppRoutes.PUBLIC.GUEST.HOME);
+                  }}
+                >
+                  Gia Phả Thông Minh
+                </span>
               </h1>
               <p className="text-lg text-gray-600 mt-2">
                 Đăng nhập để trải nghiệm đầy đủ tính năng

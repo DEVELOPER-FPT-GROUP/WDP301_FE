@@ -6,12 +6,20 @@ import New from "./New";
 import Contact from "./Contact";
 import { Container } from "@mantine/core";
 import Price from "./Price";
+import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 
 export const meta = () => {
   return [{ title: "Gia Phả Thông Minh" }];
 };
 
 function Home() {
+  const endpoint = "/trackings/increment-view";
+  const { data, isLoading, isFetching, refetch } = useGetApi({
+    queryKey: ["traffic"],
+    endpoint,
+  });
+  // console.log(data);
+
   return (
     <Container size="xl">
       <Header />

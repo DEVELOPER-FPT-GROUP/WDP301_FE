@@ -56,12 +56,12 @@ const Feature = () => {
           <Title
             order={1}
             size={50}
-            fw={900}
+            fw={700}
             c="brown"
             ta="center"
             mb="md"
             style={{
-              fontFamily: "'Pacifico', cursive",
+              fontFamily: "'Be Vietnam Pro', 'Roboto', sans-serif",
               letterSpacing: "1px",
             }}
           >
@@ -88,7 +88,8 @@ const Feature = () => {
                           fw={700}
                           c="brown"
                           style={{
-                            fontFamily: "'Pacifico', cursive",
+                            fontFamily:
+                              "'Be Vietnam Pro', 'Roboto', sans-serif",
                             letterSpacing: "1px",
                           }}
                         >
@@ -161,7 +162,8 @@ const Feature = () => {
                           fw={700}
                           c="brown"
                           style={{
-                            fontFamily: "'Pacifico', cursive",
+                            fontFamily:
+                              "'Be Vietnam Pro', 'Roboto', sans-serif",
                             letterSpacing: "1px",
                           }}
                         >

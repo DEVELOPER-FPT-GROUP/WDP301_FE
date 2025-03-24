@@ -6,9 +6,11 @@ import {
   ScrollRestoration,
   isRouteErrorResponse,
   useLoaderData,
+  useLocation,
+  useNavigate,
 } from "react-router";
 import "@mantine/core/styles.css";
-import "@xyflow/react/dist/style.css";
+import "@mantine/notifications/styles.css";
 import "./app.css";
 import { createTheme, MantineProvider } from "@mantine/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -20,6 +22,10 @@ import {
   GeneralError,
   NotFound,
 } from "./infrastructure/common/components/error-screen";
+import { Notifications } from "@mantine/notifications";
+import { useEffect } from "react";
+import { AppRoutes } from "./infrastructure/core/AppRoutes";
+import { getDataFromToken } from "./infrastructure/utils/common";
 
 const queryClient = new QueryClient();
 export const links: Route.LinksFunction = () => [
@@ -32,6 +38,10 @@ export const links: Route.LinksFunction = () => [
   {
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+  },
+  {
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lobster&display=swap",
   },
 ];
 
@@ -76,12 +86,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+
         <Meta />
         <Links />
       </head>
       <body>
         <QueryClientProvider client={queryClient}>
-          <MantineProvider theme={theme}>{children}</MantineProvider>
+          <MantineProvider theme={theme}>
+            <Notifications /> {/* ✅ Thêm vào đây */}
+            {children}
+          </MantineProvider>
           <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
         <ScrollRestoration />
@@ -93,6 +107,40 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const { isLoggedIn } = useLoaderData<typeof clientLoader>();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // console.log("location", location.pathname);
+
+  useEffect(() => {
+    const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
+
+    const redirectPaths = [
+      AppRoutes.PUBLIC.AUTH.LOGIN,
+      AppRoutes.ROOT,
+      AppRoutes.PUBLIC.GUEST.HOME,
+      AppRoutes.PUBLIC.AUTH.SIGN_UP,
+    ];
+    const currentPath = location.pathname;
+
+    if (token && redirectPaths.includes(currentPath)) {
+      const data = getDataFromToken();
+      // console.log("login", data.role);
+      if (data.role == "system_admin") {
+        navigate(AppRoutes.PRIVATE.DASHBOARD, { replace: true });
+      } else {
+        navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
+      }
+    } else if (!token && !redirectPaths.includes(currentPath)) {
+      navigate(AppRoutes.PUBLIC.AUTH.LOGIN, { replace: true });
+    } else if (
+      !token &&
+      (currentPath === AppRoutes.ROOT ||
+        currentPath === AppRoutes.PUBLIC.GUEST.HOME)
+    ) {
+      navigate(AppRoutes.PUBLIC.GUEST.HOME, { replace: true });
+    }
+  }, [isLoggedIn, location.pathname, navigate]);
 
   return (
     <>
