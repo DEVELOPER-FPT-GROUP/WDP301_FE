@@ -102,7 +102,7 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
   // console.log("members: ", members);
 
   const putMutation = usePutApi({
-    endpoint: `members/${form.values.memberId}`,
+    endpoint: `members/update/${form.values.memberId}`,
     options: {
       onSuccess: () => {
         notifySuccess({

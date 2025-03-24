@@ -125,7 +125,7 @@ export default function App() {
 
     if (token && redirectPaths.includes(currentPath)) {
       const data = getDataFromToken();
-      // console.log("login", data.role);
+      console.log("login", data.role);
       if (data.role == "system_admin") {
         navigate(AppRoutes.PRIVATE.DASHBOARD, { replace: true });
       } else {
