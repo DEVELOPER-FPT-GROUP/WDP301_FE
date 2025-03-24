@@ -52,7 +52,9 @@ const route = () => {
   const refreshTable = () => setRefreshKey((prev) => prev + 1);
 
   const columns = [
-    { key: "firstName", label: "Họ và tên" },
+    { key: "firstName", label: "Họ" },
+    { key: "middleName", label: "Tên đệm" },
+    { key: "lastName", label: "Tên" },
     { key: "dateOfDeath", label: "Ngày giỗ" },
     { key: "placeOfDeath", label: "An táng" },
     { key: "worship", label: "Thờ cúng tại" },
