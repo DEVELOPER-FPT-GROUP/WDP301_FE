@@ -100,23 +100,11 @@ interface AddChildModalProps {
   name: string; // Tên của cha/mẹ
 }
 
-interface ImagePreview {
-  url: string;
-  file: File;
-  isNew: boolean;
-}
-
 interface MediaItem {
-  ownerId: string;
-  ownerType: string;
-  url: string;
-  fileName: string;
-  mimeType: string;
-  size: number;
-  createdAt: string;
-  updatedAt: string;
+  faceId: string;
+  previewUrl: string;
+  status: "unknown" | "avatar" | "label";
 }
-
 interface ApiResponse {
   statusCode: number;
   message: string;
@@ -250,60 +238,6 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
           response
         );
 
-        // ===== BẮT ĐẦU: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
-
-        // // Tạo một bản sao của response.data để không ảnh hưởng đến dữ liệu gốc
-        // const mockData = { ...response.data };
-
-        // // Tạo một mảng media giả định với nhiều ảnh
-        // mockData.media = [
-        //   // Giữ lại media gốc nếu có
-        //   ...(response.data.media || []),
-
-        //   // Thêm các ảnh giả định
-        //   {
-        //     ownerId: "mock-media-1",
-        //     ownerType: "Member",
-        //     url: "https://res.cloudinary.com/dhfatqx0l/image/upload/v1742665011/uploads/lxqunmukpm49x0hca2vx.png",
-        //     fileName: "mock1.png",
-        //     mimeType: "image/png",
-        //     size: 330023,
-        //     createdAt: "2025-03-22T17:36:52.325Z",
-        //     updatedAt: "2025-03-22T17:36:52.325Z",
-        //   },
-        //   {
-        //     ownerId: "mock-media-2",
-        //     ownerType: "Member",
-        //     url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574",
-        //     fileName: "mock2.jpg",
-        //     mimeType: "image/jpeg",
-        //     size: 250000,
-        //     createdAt: "2025-03-22T17:36:52.325Z",
-        //     updatedAt: "2025-03-22T17:36:52.325Z",
-        //   },
-        //   {
-        //     ownerId: "mock-media-3",
-        //     ownerType: "Member",
-        //     url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961",
-        //     fileName: "mock3.jpg",
-        //     mimeType: "image/jpeg",
-        //     size: 280000,
-        //     createdAt: "2025-03-22T17:36:52.325Z",
-        //     updatedAt: "2025-03-22T17:36:52.325Z",
-        //   },
-        // ];
-
-        // // Sử dụng dữ liệu giả thay vì dữ liệu thật
-        // setApiResponseData(mockData);
-        // setShowImageSelection(true);
-
-        // ===== KẾT THÚC: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
-
-        /* Ghi chú: Đã comment đoạn code logic thực tế, bỏ comment sau khi test xong
-        
-        // Kiểm tra nếu có nhiều ảnh trong response
-     
-        */
         if (response?.data?.media && response.data.media.length > 1) {
           setApiResponseData(response.data);
           setShowImageSelection(true);
@@ -427,6 +361,7 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
       title: "Thành công",
       message: "Đã thêm con thành công và xử lý ảnh!",
     });
+    onSuccess();
     handleFinalClose();
   };
 
@@ -488,7 +423,16 @@ const AddChildModal: React.FC<AddChildModalProps> = ({
           newMemberId={apiResponseData.memberId}
           familyId={familyId}
           originalImage={previewImage}
-          onComplete={handleImageSelectionComplete}
+          onComplete={(result) =>
+            handleImageSelectionComplete(
+              result.verifiedFaces.map((face: any) => ({
+                id: face.id,
+                url: face.url,
+                status: face.status,
+              }))
+            )
+          }
+          // refetch={onSuccess}
           onCancel={handleImageSelectionCancel} // Sử dụng hàm mới để xử lý khi người dùng hủy
         />
       </Modal>

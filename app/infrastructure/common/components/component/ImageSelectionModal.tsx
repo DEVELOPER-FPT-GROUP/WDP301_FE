@@ -19,28 +19,24 @@ import {
   Center,
   Flex,
 } from "@mantine/core";
-import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
+import {
+  useGetApi,
+  usePostApi,
+} from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import { IconAlertCircle, IconPhoto } from "@tabler/icons-react";
 
 interface MediaItem {
-  ownerId: string;
-  ownerType: string;
-  url: string;
-  fileName: string;
-  mimeType: string;
-  size: number;
-  createdAt: string;
-  updatedAt: string;
+  faceId: string;
+  previewUrl: string;
+  status: "unknown" | "avatar" | "label";
 }
 
 interface MediaSelectionResult {
-  id: string;
-  url: string;
+  faceId: string;
   status: "avatar" | "label" | "unknown";
-  memberId?: string; // Chỉ tồn tại khi status là avatar hoặc label
+  memberId?: string;
 }
 
-// Thêm interface mới cho các tiêu đề có thể tùy chỉnh
 interface CustomTexts {
   originalImageTitle?: string;
   selectAvatarTitle?: string;
@@ -54,10 +50,10 @@ interface CustomTexts {
   finishButton?: string;
   nextButton?: string;
   cancelButton?: string;
-  requiredAvatarMessage?: string; // Thêm message mới cho thông báo avatar bắt buộc
-  tooltipMessage?: string; // Thêm message cho tooltip
-  multipleImagesProcessingTitle?: string; // Tiêu đề xử lý nhiều ảnh
-  multipleImagesProcessingDescription?: string; // Mô tả xử lý nhiều ảnh
+  requiredAvatarMessage?: string;
+  tooltipMessage?: string;
+  multipleImagesProcessingTitle?: string;
+  multipleImagesProcessingDescription?: string;
 }
 
 interface ImageSelectionModalProps {
@@ -65,11 +61,12 @@ interface ImageSelectionModalProps {
   newMemberId: string;
   familyId: string | null;
   originalImage: string | null;
-  onComplete: (result: MediaSelectionResult[]) => void;
-  onCancel?: () => void; // Thêm callback khi người dùng hủy
-  modalType?: "add-child" | "add-spouse" | "edit-member" | "add-leader"; // Thêm loại modal add-leader
-  customTexts?: CustomTexts; // Thêm các tiêu đề tùy chỉnh
-  disableClose?: boolean; // Thêm prop để vô hiệu hóa nút đóng
+  onComplete: (result: { verifiedFaces: MediaSelectionResult[] }) => void;
+  onCancel?: () => void;
+  modalType?: "add-child" | "add-spouse" | "edit-member" | "add-leader";
+  customTexts?: CustomTexts;
+  disableClose?: boolean;
+  refetch?: () => void;
 }
 
 interface FamilyMember {
@@ -89,53 +86,55 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
   onCancel,
   modalType = "add-child",
   customTexts = {},
+  refetch,
 }) => {
-  // Ref để ẩn nút close
+  // Ref to hide the close button.
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // State để theo dõi quá trình tự động xử lý
+  // usePostApi hook to post verified face data.
+  const vertifyFaces = usePostApi({
+    endpoint: "/media/verify-upload",
+  });
+
+  // Flag for auto processing when there is 0 or 1 image.
   const [autoProcessing, setAutoProcessing] = useState(media.length <= 1);
 
-  // Tự động xử lý nếu chỉ có một hoặc không có ảnh
+  // Auto process if there is 0 or 1 image.
   useEffect(() => {
     if (media.length <= 1) {
-      console.log(
-        `[${new Date().toISOString()}] Auto-processing with ${
-          media.length
-        } images`
-      );
-
+      // console.log(
+      //   `[${new Date().toISOString()}] Auto-processing with ${
+      //     media.length
+      //   } images`
+      // );
       setTimeout(() => {
         if (media.length === 1) {
-          // Nếu có một ảnh, tự động chọn làm avatar
+          // If there is one image, auto select as avatar.
           const result: MediaSelectionResult[] = [
             {
-              id: media[0].ownerId,
-              url: media[0].url,
+              faceId: media[0].faceId,
               status: "avatar",
               memberId: newMemberId,
             },
           ];
-
-          console.log("Auto-selected single image as avatar:", result);
-          onComplete(result);
+          // console.log("Auto-selected single image as avatar:", result);
+          onComplete({ verifiedFaces: result });
         } else {
-          // Nếu không có ảnh, hoàn thành với mảng rỗng
-          console.log("No images to process, completing");
-          onComplete([]);
+          // If there is no image, complete with empty array.
+          // console.log("No images to process, completing");
+          onComplete({ verifiedFaces: [] });
         }
-      }, 100); // Thêm một chút delay để hiển thị LoadingOverlay
+      }, 100);
     } else {
       setAutoProcessing(false);
     }
   }, [media, newMemberId, onComplete]);
 
-  // Nếu đang tự động xử lý, hiển thị màn hình loading
   if (autoProcessing) {
     return <LoadingOverlay visible />;
   }
 
-  // Định nghĩa các tiêu đề mặc định dựa trên loại modal
+  // Define default texts based on modal type.
   const getDefaultTexts = (): CustomTexts => {
     switch (modalType) {
       case "add-leader":
@@ -168,9 +167,7 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
           selectAvatarTitle: "Chọn ảnh đại diện",
           selectAvatarDescription:
             "Vui lòng chọn một ảnh để làm ảnh đại diện cho người phối ngẫu.",
-          confirmRelativesTitle: "Xác nhận nhận diện người thân",
-          confirmRelativesDescription:
-            "Một số ảnh khác đã được tải lên cùng với ảnh đại diện. Bạn có muốn gán những ảnh này cho các thành viên khác trong gia đình không?",
+          // For spouse, we want to proceed directly to labeling so that the dropdown appears.
           labelImagesTitle: "Nhận diện thành viên trong ảnh",
           labelImagesDescription:
             "Nếu bạn nhận ra thành viên gia đình trong các ảnh dưới đây, hãy chọn họ từ danh sách.",
@@ -229,41 +226,40 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
     }
   };
 
-  // Kết hợp tiêu đề mặc định với tiêu đề tùy chỉnh
+  // Combine default texts with custom texts.
   const texts = { ...getDefaultTexts(), ...customTexts };
 
-  // State cho ảnh đại diện đã chọn
+  // State for the selected avatar index.
   const [selectedAvatarIndex, setSelectedAvatarIndex] = useState<number | null>(
     null
   );
 
-  // Thêm state để quản lý các bước
+  // Step management state.
+  // For "add-spouse", we bypass the confirm-relatives step so that the dropdown appears.
   const [currentStep, setCurrentStep] = useState<
     "select-avatar" | "confirm-relatives" | "label-images"
   >("select-avatar");
 
-  // State cho việc nhận dạng người trong ảnh
+  // State for image assignments.
   const [imageAssignments, setImageAssignments] = useState<
     {
       url: string;
       memberId: string | null;
-      ownerId: string;
+      faceId: string;
     }[]
   >([]);
 
-  // State cho danh sách thành viên
+  // State for family members.
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
 
-  // State lưu trữ thành viên được chọn cho mỗi ảnh
+  // State for selected members per image.
   const [selectedMembers, setSelectedMembers] = useState<{
     [key: string]: FamilyMember | null;
   }>({});
 
-  // Ẩn nút close khi ở màn hình select-avatar
+  // Hide close button in the select-avatar step.
   useEffect(() => {
-    // Nếu đang ở màn hình select-avatar, ẩn nút close
     const hideCloseButton = () => {
-      // Tìm nút close và ẩn đi
       const modalParent = modalRef.current?.closest(".mantine-Modal-root");
       if (modalParent) {
         const closeButton = modalParent.querySelector(".mantine-Modal-close");
@@ -276,41 +272,40 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
         }
       }
     };
-
-    // Gọi hàm ẩn nút close
     hideCloseButton();
-
-    // Sử dụng MutationObserver để theo dõi thay đổi DOM
     const observer = new MutationObserver(hideCloseButton);
     if (modalRef.current) {
       observer.observe(document.body, { childList: true, subtree: true });
     }
-
-    // Cleanup
     return () => {
       observer.disconnect();
     };
   }, [currentStep]);
 
-  // Console log thông báo khi component được tạo
+  // Log component mount.
   useEffect(() => {
-    console.log(
-      `ImageSelectionModal: Xử lý ${media.length} ảnh cho ${modalType}`
-    );
-    console.log(`Thời gian bắt đầu xử lý: ${new Date().toISOString()}`);
+    // console.log(
+    //   `ImageSelectionModal: Xử lý ${media.length} ảnh cho ${modalType}`
+    // );
+    // console.log(`Thời gian bắt đầu xử lý: ${new Date().toISOString()}`);
+    // console.log(`Modal type: ${modalType}, familyId: ${familyId}`); // Add this line
   }, []);
 
-  // Lấy danh sách thành viên trong gia đình
+  // Fetch family members.
   const { data: memberData, isLoading } = useGetApi({
-    queryKey: ["member", 1, 10, 0, familyId],
+    queryKey: ["member", modalType, familyId], // Modified query key to depend on modalType
     endpoint: familyId ? `members/family/${familyId}/search` : "",
-    queryParams: { page: 1, limit: 10 },
+    queryParams: { page: 1, limit: 10000 },
+    enabled: !!familyId,
   });
 
-  // Xử lý dữ liệu thành viên khi API trả về
+  // Process fetched family members.
   useEffect(() => {
     if (memberData?.data?.items) {
-      // Lọc ra các thành viên, loại bỏ thành viên vừa được tạo
+      // console.log(
+      //   `Fetched family members for ${modalType}:`,
+      //   memberData.data.items
+      // );
       const members = memberData.data.items
         .filter((member: any) => member.memberId !== newMemberId)
         .map((member: any) => ({
@@ -318,91 +313,107 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
           firstName: member.firstName,
           middleName: member.middleName,
           lastName: member.lastName,
-          // Lưu lại ảnh của thành viên nếu có
           media:
             member.media && member.media.length > 0 ? member.media[0] : null,
         }));
       setFamilyMembers(members);
+      // console.log(
+      //   `Processed ${members.length} family members for the dropdown`
+      // );
+    } else {
+      console.warn(
+        `No family members found in the API response for ${modalType}`
+      );
     }
-  }, [memberData, newMemberId]);
+  }, [memberData, newMemberId, modalType]);
 
-  // Khởi tạo dữ liệu ảnh khi component mount
+  // Initialize image assignments from media.
   useEffect(() => {
     if (media && media.length > 0) {
       const images = media.map((item) => ({
-        url: item.url,
+        url: item.previewUrl,
         memberId: null,
-        ownerId: item.ownerId,
+        faceId: item.faceId,
       }));
       setImageAssignments(images);
     }
   }, [media]);
 
-  // Xử lý khi người dùng chọn thành viên cho một ảnh
+  // Handle member selection for an image.
   const handleMemberSelection = (
-    imageOwnerId: string,
+    imageFaceId: string,
     memberId: string | null
   ) => {
-    // Cập nhật assignment cho ảnh
+    // console.log(`Selecting member ${memberId} for image ${imageFaceId}`);
     setImageAssignments((prev) =>
       prev.map((item) =>
-        item.ownerId === imageOwnerId ? { ...item, memberId } : item
+        item.faceId === imageFaceId ? { ...item, memberId } : item
       )
     );
-
-    // Nếu memberId có giá trị, tìm thành viên tương ứng và lưu vào selectedMembers
     if (memberId) {
       const selectedMember =
         familyMembers.find((member) => member.memberId === memberId) || null;
+      // console.log("Selected member:", selectedMember);
       setSelectedMembers((prev) => ({
         ...prev,
-        [imageOwnerId]: selectedMember,
+        [imageFaceId]: selectedMember,
       }));
     } else {
-      // Nếu không có memberId (người dùng đã xóa lựa chọn), xóa khỏi selectedMembers
       setSelectedMembers((prev) => {
         const newState = { ...prev };
-        delete newState[imageOwnerId];
+        delete newState[imageFaceId];
         return newState;
       });
     }
   };
+  const isSubmitting = vertifyFaces.isPending;
+  // Handle when the user selects an avatar.
+  // const handleAvatarSelected = () => {
+  //   if (selectedAvatarIndex === null) return;
 
-  // Xử lý khi người dùng hoàn thành bước chọn avatar
+  //   // For add-spouse, ensure we have family members before proceeding
+  //   if (modalType === "add-spouse") {
+  //     console.log("Add-spouse flow: Transitioning to label-images step");
+  //     console.log(`Current family members count: ${familyMembers.length}`);
+
+  //     // If we don't have family members yet and API is still loading, show loading
+  //     if (familyMembers.length === 0 && isLoading) {
+  //       console.log("Family members not loaded yet, showing loading overlay");
+  //       return <LoadingOverlay visible />;
+  //     }
+
+  //     setCurrentStep("label-images");
+  //     return;
+  //   }
+  //   setCurrentStep("confirm-relatives");
+  // };
   const handleAvatarSelected = () => {
-    if (selectedAvatarIndex === null) {
-      return; // Không cho phép tiếp tục nếu chưa chọn avatar
+    if (selectedAvatarIndex === null) return;
+    if (familyMembers.length === 0 && isLoading) {
+      console.log("Family members not loaded yet, showing loading overlay");
+      return <LoadingOverlay visible />;
     }
 
-    // Nếu đang trong trường hợp add-leader, submitSelectionData luôn mà không chuyển bước
-    if (modalType === "add-leader") {
-      submitSelectionData();
-      return;
-    }
-
-    // Các trường hợp khác, chuyển sang bước tiếp theo
     setCurrentStep("confirm-relatives");
   };
 
-  // Xử lý khi người dùng xác nhận có muốn nhận diện người thân
+  // Handle confirmation of whether to label other images.
   const handleConfirmLabelImages = (confirmed: boolean) => {
     if (confirmed) {
       setCurrentStep("label-images");
     } else {
-      // Nếu không muốn gán nhãn cho ảnh, trực tiếp hoàn thành quy trình
       submitSelectionData();
     }
   };
 
-  // Xử lý khi người dùng hoàn thành
+  // Handle final submission.
   const handleSubmit = () => {
     submitSelectionData();
+    refetch && refetch();
   };
 
-  // Xử lý khi người dùng hủy
+  // Handle cancel action.
   const handleCancel = () => {
-    // Nếu đã có dữ liệu (đã chọn avatar) và không phải màn hình select-avatar
-    // thì submitSelectionData luôn
     if (
       selectedAvatarIndex !== null &&
       modalType !== "add-leader" &&
@@ -411,71 +422,112 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
       submitSelectionData();
       return;
     }
-
     if (onCancel) {
       onCancel();
     }
   };
 
-  // Hàm xử lý dữ liệu gửi đi
+  // Submit finalized data to the API /media/verify-upload.
   const submitSelectionData = () => {
-    // Chuẩn bị dữ liệu kết quả
-    const result: MediaSelectionResult[] = [];
-
-    // Thêm ảnh đại diện
+    const verifiedFaces: MediaSelectionResult[] = [];
+    // Process avatar image.
     if (media && selectedAvatarIndex !== null) {
-      result.push({
-        id: media[selectedAvatarIndex].ownerId,
-        url: media[selectedAvatarIndex].url,
+      verifiedFaces.push({
+        faceId: media[selectedAvatarIndex].faceId,
         status: "avatar",
         memberId: newMemberId,
       });
     }
-
-    // Thêm các ảnh được gán nhãn hoặc bỏ qua
+    // Process other images.
     imageAssignments.forEach((item, index) => {
-      // Bỏ qua ảnh đã chọn làm avatar
       if (media[index] && index === selectedAvatarIndex) {
         return;
       }
-
-      // Tạo object cơ bản
-      const mediaResult: any = {
-        id: item.ownerId,
-        url: item.url,
-        status: item.memberId ? "label" : "unknown",
-      };
-
-      // Chỉ thêm memberId nếu có giá trị và status không phải là unknown
-      if (item.memberId && mediaResult.status !== "unknown") {
-        mediaResult.memberId = item.memberId;
+      if (item.memberId) {
+        verifiedFaces.push({
+          faceId: item.faceId,
+          status: "label",
+          memberId: item.memberId,
+        });
+      } else {
+        verifiedFaces.push({
+          faceId: item.faceId,
+          status: "unknown",
+        });
       }
-
-      result.push(mediaResult);
     });
-
-    console.log("Final media selection data:", result);
-
-    // Gọi callback và truyền dữ liệu
-    onComplete(result);
+    const payload = { verifiedFaces };
+    // console.log("Submitting media selection data:", payload);
+    // Post the data using usePostApi hook.
+    vertifyFaces.mutate(payload, {
+      onSuccess: (data) => {
+        console.log("Data submitted successfully:", data);
+        onComplete(payload);
+      },
+      onError: (err) => {
+        console.error("Error submitting data:", err);
+        // Optionally display an error message to the user.
+      },
+    });
   };
+
+  // Add a debugging output at this point to inspect the state
+  // console.log(`Current rendering state:
+  //   - Modal type: ${modalType}
+  //   - Current step: ${currentStep}
+  //   - Family members: ${familyMembers.length}
+  //   - Is loading: ${isLoading}
+  //   - Family ID: ${familyId}
+  // `);
 
   if (isLoading) {
     return <LoadingOverlay visible />;
   }
 
-  // Tạo danh sách dropdown tùy chọn cho Select
+  if (familyMembers.length === 0 && currentStep === "label-images") {
+    return (
+      <div ref={modalRef}>
+        <Alert
+          icon={<IconAlertCircle size={16} />}
+          title="Không có dữ liệu thành viên"
+          color="yellow"
+        >
+          Không tìm thấy thành viên gia đình nào. Hãy kiểm tra lại kết nối mạng
+          và thử lại.
+        </Alert>
+        <Group justify="flex-end" mt="xl">
+          <Button
+            variant="outline"
+            color="gray"
+            size="md"
+            onClick={handleCancel}
+          >
+            {texts.cancelButton}
+          </Button>
+          <Button
+            variant="filled"
+            color="blue"
+            size="md"
+            onClick={handleSubmit}
+          >
+            {texts.finishButton}
+          </Button>
+        </Group>
+      </div>
+    );
+  }
+
   const memberOptions = familyMembers.map((member) => ({
     value: member.memberId,
     label: `${member.firstName} ${member.middleName} ${member.lastName}`,
   }));
 
-  // Hiển thị bước 1: Chọn ảnh đại diện
+  console.log("Member options for dropdown:", memberOptions);
+
   if (currentStep === "select-avatar") {
     return (
       <div ref={modalRef}>
         <Stack gap="xl">
-          {/* Thông báo xử lý nhiều ảnh */}
           <Alert
             icon={<IconPhoto size={20} />}
             title={texts.multipleImagesProcessingTitle}
@@ -483,15 +535,11 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
           >
             {texts.multipleImagesProcessingDescription}
           </Alert>
-
-          {/* Hiển thị thông báo bắt buộc chọn avatar */}
           <Alert icon={<IconAlertCircle size={16} />} color="yellow" mb="md">
             {modalType === "add-leader"
               ? texts.requiredAvatarMessage
               : "Vui lòng chọn một ảnh đại diện trước khi tiếp tục."}
           </Alert>
-
-          {/* Hiển thị ảnh gốc ở phần trên với kích thước lớn hơn */}
           {originalImage && (
             <div>
               <Title order={4} mb="md">
@@ -516,10 +564,7 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
               </Card>
             </div>
           )}
-
           <Divider my="md" />
-
-          {/* Phần chọn ảnh đại diện */}
           <div>
             <Title order={4} mb="md">
               {texts.selectAvatarTitle}
@@ -527,9 +572,7 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
             <Text color="dimmed" mb="md">
               {texts.selectAvatarDescription}
             </Text>
-
             <Grid>
-              {/* Hiển thị các ảnh trả về từ API để chọn làm avatar */}
               {media.map((item, index) => (
                 <Grid.Col span={4} key={index}>
                   <Card
@@ -575,7 +618,7 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
                         }}
                       >
                         <Image
-                          src={item.url}
+                          src={item.previewUrl}
                           height={150}
                           width={200}
                           fit="contain"
@@ -594,8 +637,6 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
               ))}
             </Grid>
           </div>
-
-          {/* Chỉ hiển thị nút tiếp tục, không hiển thị nút hủy ở bước chọn avatar */}
           <Group justify="flex-end" mt="xl">
             <Button
               variant="filled"
@@ -612,7 +653,6 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
     );
   }
 
-  // Hiển thị bước 2: Xác nhận có muốn nhận diện người thân không
   if (currentStep === "confirm-relatives") {
     return (
       <div ref={modalRef}>
@@ -624,13 +664,13 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
           >
             {texts.confirmRelativesDescription}
           </Alert>
-
           <Group justify="center" mt="lg">
             <Button
               variant="outline"
               color="gray"
               size="md"
               onClick={() => handleConfirmLabelImages(false)}
+              disabled={isSubmitting}
             >
               {texts.noButton}
             </Button>
@@ -639,6 +679,7 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
               color="blue"
               size="md"
               onClick={() => handleConfirmLabelImages(true)}
+              disabled={isSubmitting}
             >
               {texts.yesButton}
             </Button>
@@ -648,7 +689,6 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
     );
   }
 
-  // Hiển thị bước 3: Nhận diện thành viên trong ảnh với layout mới
   return (
     <div ref={modalRef}>
       <Stack gap="xl">
@@ -658,20 +698,14 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
         <Text color="dimmed" mb="md">
           {texts.labelImagesDescription}
         </Text>
-
-        {/* Lặp qua các ảnh, bỏ qua ảnh đã chọn làm avatar */}
         {imageAssignments.map((item, index) => {
-          // Bỏ qua ảnh đã chọn làm avatar
           if (index === selectedAvatarIndex) {
             return null;
           }
-
-          const selectedMember = selectedMembers[item.ownerId];
-
+          const selectedMember = selectedMembers[item.faceId];
           return (
-            <Paper shadow="sm" p="md" withBorder mb="md" key={item.ownerId}>
+            <Paper shadow="sm" p="md" withBorder mb="md" key={item.faceId}>
               <Flex gap="md" align="flex-start">
-                {/* Bên trái: Ảnh nhỏ */}
                 <Box
                   style={{
                     width: "30%",
@@ -696,8 +730,6 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
                     }}
                   />
                 </Box>
-
-                {/* Bên phải: Dropdown và ảnh của thành viên được chọn */}
                 <Box style={{ flex: 1 }}>
                   <Select
                     label="Người trong ảnh"
@@ -705,22 +737,20 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
                     data={memberOptions}
                     value={item.memberId}
                     onChange={(value) =>
-                      handleMemberSelection(item.ownerId, value)
+                      handleMemberSelection(item.faceId, value)
                     }
                     searchable
                     clearable
                     nothingFoundMessage="Không tìm thấy thành viên nào"
                     mb="md"
                   />
-
-                  {/* Hiển thị ảnh của thành viên đã chọn nếu có */}
                   {selectedMember && (
                     <Stack gap="xs">
                       <Text size="sm" fw={500}>
                         Xác nhận: {selectedMember.firstName}{" "}
                         {selectedMember.middleName} {selectedMember.lastName}
                       </Text>
-                      {selectedMember.media && (
+                      {selectedMember.media ? (
                         <Box style={{ width: "100px", height: "100px" }}>
                           <Image
                             src={selectedMember.media}
@@ -736,8 +766,7 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
                             }}
                           />
                         </Box>
-                      )}
-                      {!selectedMember.media && (
+                      ) : (
                         <Text size="sm" color="dimmed" fs="italic">
                           (Thành viên này chưa có ảnh đại diện)
                         </Text>
@@ -749,14 +778,13 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
             </Paper>
           );
         })}
-
-        {/* Nút hủy và hoàn thành */}
         <Group justify="flex-end" mt="xl">
           <Button
             variant="outline"
             color="gray"
             size="md"
             onClick={handleCancel}
+            disabled={isSubmitting}
           >
             {texts.cancelButton}
           </Button>
@@ -765,8 +793,10 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
             color="blue"
             size="md"
             onClick={handleSubmit}
+            disabled={isSubmitting}
+            loading={isSubmitting}
           >
-            {texts.finishButton}
+            {isSubmitting ? "Đang xử lý..." : texts.finishButton}
           </Button>
         </Group>
       </Stack>

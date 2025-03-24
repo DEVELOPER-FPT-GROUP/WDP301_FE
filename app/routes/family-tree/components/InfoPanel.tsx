@@ -67,10 +67,12 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
 
   if (!node) return null;
 
-  // Determine if node is already someone's partner
   const isAlreadyPartner =
-    node.parent && node.parentRelation && node.parentRelation.partner === node;
-
+    (node.gender === "male" && node.generation === 0) ||
+    node.generation > 0 ||
+    (node.parent &&
+      node.parentRelation &&
+      node.parentRelation.partner === node);
   // Check if node has any married relationships
   const hasMarriedRelationship =
     node.relationships && node.relationships.some((rel) => rel.isMarried);
@@ -79,7 +81,7 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   const spouseText = node.gender === "female" ? "Thêm Chồng" : "Thêm Vợ";
 
   // Determine if we need to show buttons
-  const showAddSpouse = !isAlreadyPartner && onAddSpouse;
+  const showAddSpouse = isAlreadyPartner && onAddSpouse;
   const showAddChild = hasMarriedRelationship && onAddChild;
 
   // Determine default image based on gender
@@ -97,7 +99,7 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
         position: "absolute",
         top: 80,
         right: 20,
-        width: 300,
+        width: 350,
         maxHeight: "calc(100vh - 100px)",
         overflowY: "auto",
         zIndex: 1000,

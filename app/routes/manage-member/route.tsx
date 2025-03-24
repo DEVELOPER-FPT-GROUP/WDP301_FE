@@ -56,6 +56,7 @@ const Route = () => {
 
   // Fetch active members (isDeleted = false)
   const endpointActive = familyId ? `members/family/${familyId}/search` : "";
+
   const {
     data: activeData,
     isLoading: isLoadingActive,
@@ -76,6 +77,7 @@ const Route = () => {
       isDeleted: false,
       search: searchTerm || undefined, // Only add search param if it has a value
     },
+    enabled: !!familyId,
   });
 
   // Fetch deleted members (isDeleted = true)
@@ -100,6 +102,7 @@ const Route = () => {
       isDeleted: true,
       search: searchTerm || undefined, // Only add search param if it has a value
     },
+    enabled: !!familyId,
   });
 
   // Update local state when active data changes

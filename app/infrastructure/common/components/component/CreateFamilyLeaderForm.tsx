@@ -27,6 +27,7 @@ import {
   notifySuccess,
 } from "~/infrastructure/utils/notification/notification";
 import ImageSelectionModal from "./ImageSelectionModal"; // Import ImageSelectionModal
+import { getDataFromToken } from "~/infrastructure/utils/common";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -63,14 +64,9 @@ interface CreateFamilyLeaderFormProps {
 
 // Interfaces cho ImageSelectionModal
 interface MediaItem {
-  ownerId: string;
-  ownerType: string;
-  url: string;
-  fileName: string;
-  mimeType: string;
-  size: number;
-  createdAt: string;
-  updatedAt: string;
+  faceId: string;
+  previewUrl: string;
+  status: "unknown" | "avatar" | "label";
 }
 
 interface MediaSelectionResult {
@@ -133,7 +129,8 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
     );
     setUploadedFiles((prev) => prev.filter((file) => file !== image.file));
   };
-
+  const dataToken = getDataFromToken();
+  const username = dataToken?.username;
   const form = useForm({
     initialValues: {
       firstName: "",
@@ -159,71 +156,6 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
           response
         );
 
-        // ===== BẮT ĐẦU: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
-
-        // Nếu có hơn 1 ảnh được tải lên (Giả lập cho mục đích test)
-        if (uploadedFiles) {
-          // Tạo một bản sao của response.data để không ảnh hưởng đến dữ liệu gốc
-          const mockData = { ...response.data };
-
-          // Tạo một mảng media giả định với các ảnh đã tải lên
-          mockData.media = [
-            // Giữ lại media gốc nếu có
-            ...(response.data.media || []),
-
-            // Thêm các ảnh giả định
-            {
-              ownerId: "mock-media-1",
-              ownerType: "Member",
-              url: "https://res.cloudinary.com/dhfatqx0l/image/upload/v1742665011/uploads/lxqunmukpm49x0hca2vx.png",
-              fileName: "mock1.png",
-              mimeType: "image/png",
-              size: 330023,
-              createdAt: "2025-03-22T17:36:52.325Z",
-              updatedAt: "2025-03-22T17:36:52.325Z",
-            },
-            {
-              ownerId: "mock-media-2",
-              ownerType: "Member",
-              url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574",
-              fileName: "mock2.jpg",
-              mimeType: "image/jpeg",
-              size: 250000,
-              createdAt: "2025-03-22T17:36:52.325Z",
-              updatedAt: "2025-03-22T17:36:52.325Z",
-            },
-            {
-              ownerId: "mock-media-3",
-              ownerType: "Member",
-              url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961",
-              fileName: "mock3.jpg",
-              mimeType: "image/jpeg",
-              size: 280000,
-              createdAt: "2025-03-22T17:36:52.325Z",
-              updatedAt: "2025-03-22T17:36:52.325Z",
-            },
-          ];
-
-          // Lưu memberId của trưởng họ vừa tạo
-          if (response?.data?.memberId) {
-            setSelectedLeaderMemberId(response.data.memberId);
-          }
-
-          console.log("Mock data for image selection:", mockData);
-          // Sử dụng dữ liệu giả thay vì dữ liệu thật
-          setApiResponseData(mockData);
-          setShowImageSelection(true);
-          setLoading(false);
-
-          // ===== KẾT THÚC: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
-        } else {
-          // Nếu không có nhiều ảnh, hoàn thành quy trình bình thường
-          handleCompletionWithoutImageModal();
-        }
-
-        /* Ghi chú: Đã comment đoạn code logic thực tế, bỏ comment sau khi test xong
-        
-        // Kiểm tra nếu có nhiều ảnh trong response
         if (response?.data?.media && response.data.media.length > 1) {
           setSelectedLeaderMemberId(response.data.memberId);
           setApiResponseData(response.data);
@@ -233,7 +165,6 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
           // Nếu không có nhiều ảnh, đóng form và thông báo thành công
           handleCompletionWithoutImageModal();
         }
-        */
       },
     },
   });
@@ -330,7 +261,7 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
 
       // Set generation to 0 for leader
       formData.append("generation", "0");
-
+      formData.append("username", username);
       // Add image files to formData
       if (uploadedFiles.length > 0) {
         uploadedFiles.forEach((file) => {
@@ -380,7 +311,15 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
           newMemberId={selectedLeaderMemberId || ""}
           familyId={familyId || null}
           originalImage={previewImages.length > 0 ? previewImages[0].url : null}
-          onComplete={handleImageSelectionComplete}
+          onComplete={(result) =>
+            handleImageSelectionComplete(
+              result.verifiedFaces.map((face: any) => ({
+                id: face.id,
+                url: face.url,
+                status: face.status,
+              }))
+            )
+          }
           onCancel={handleImageSelectionCancel}
           modalType="add-leader" // Đã thay đổi modalType thành "add-leader"
         />
@@ -404,17 +343,6 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
         <Title order={3} mb="md" c="brown" fw={700}>
           Tạo Trưởng Họ
         </Title>
-
-        {/* {error && (
-        <Alert
-          icon={<IconAlertCircle size={16} />}
-          title="Lỗi"
-          color="red"
-          mb="md"
-        >
-          {error}
-        </Alert>
-      )} */}
 
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack gap="md">

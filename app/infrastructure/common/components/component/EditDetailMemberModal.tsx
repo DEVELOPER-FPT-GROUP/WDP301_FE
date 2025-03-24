@@ -54,15 +54,9 @@ interface ImagePreview {
 }
 
 interface MediaItem {
-  id: string;
-  ownerId: string;
-  ownerType: string;
-  url: string;
-  fileName: string;
-  mimeType: string;
-  size: number;
-  createdAt: string;
-  updatedAt: string;
+  faceId: string;
+  previewUrl: string;
+  status: "unknown" | "avatar" | "label";
 }
 
 // Định nghĩa interface cho cấu trúc dữ liệu mediaData
@@ -126,9 +120,6 @@ const initialFormData: MemberFormData = {
   shortSummary: "",
   isDeleted: "false",
 };
-
-// Current Date and Time: 2025-03-22 18:52:55
-// User: HE171216
 
 const EditDetailMemberModal: React.FC<EditDetailMemberModalProps> = ({
   opened,
@@ -343,13 +334,13 @@ const EditDetailMemberModal: React.FC<EditDetailMemberModalProps> = ({
           /* Khi API trả về nhiều ảnh thực sự, thay thế bằng:
 
           */
-          // if (response?.data?.media && response.data.media.length > 1) {
-          //   setApiResponseData(response.data);
-          //   setShowImageSelection(true);
-          //   setIsLoading(false);
-          // } else {
-          //   handleCompletionWithoutImageModal(response);
-          // }
+          if (response?.data?.media && response.data.media.length > 1) {
+            setApiResponseData(response.data);
+            setShowImageSelection(true);
+            setIsLoading(false);
+          } else {
+            handleCompletionWithoutImageModal(response);
+          }
         } else {
           handleCompletionWithoutImageModal(response);
         }
@@ -519,7 +510,15 @@ const EditDetailMemberModal: React.FC<EditDetailMemberModalProps> = ({
           newMemberId={memberId || ""}
           familyId={form.values.familyId}
           originalImage={previewImage?.url || null}
-          onComplete={handleImageSelectionComplete}
+          onComplete={(result) =>
+            handleImageSelectionComplete(
+              result.verifiedFaces.map((face: any) => ({
+                id: face.id,
+                url: face.url,
+                status: face.status,
+              }))
+            )
+          }
           onCancel={handleImageSelectionCancel}
           modalType="edit-member"
           customTexts={{

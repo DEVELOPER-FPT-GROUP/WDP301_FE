@@ -26,6 +26,8 @@ import {
   notifySuccess,
 } from "~/infrastructure/utils/notification/notification";
 import ImageSelectionModal from "./ImageSelectionModal"; // Import ImageSelectionModal
+import { Constants } from "~/infrastructure/core/constants";
+import { jwtDecode } from "jwt-decode";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -66,19 +68,13 @@ interface AddSpouseModalProps {
 
 // Interfaces cho ImageSelectionModal
 interface MediaItem {
-  ownerId: string;
-  ownerType: string;
-  url: string;
-  fileName: string;
-  mimeType: string;
-  size: number;
-  createdAt: string;
-  updatedAt: string;
+  faceId: string;
+  previewUrl: string;
+  status: "unknown" | "avatar" | "label";
 }
 
 interface MediaSelectionResult {
-  id: string;
-  url: string;
+  faceId: string;
   status: "avatar" | "label" | "unknown";
   memberId?: string;
 }
@@ -93,7 +89,18 @@ interface ApiResponse {
     media: MediaItem[];
   };
 }
+const getFamilyIdFromToken = () => {
+  const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
+  if (!token) return null;
 
+  try {
+    const decoded: any = jwtDecode(token);
+    return decoded.familyId;
+  } catch (error) {
+    console.error("Lỗi khi giải mã token:", error);
+    return null;
+  }
+};
 const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
   opened,
   onClose,
@@ -114,7 +121,7 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
   const [apiResponseData, setApiResponseData] = useState<
     ApiResponse["data"] | null
   >(null);
-  const [familyId, setFamilyId] = useState<string | null>(null);
+  const familyId = getFamilyIdFromToken();
 
   // Function to handle image upload - đã cập nhật cho một ảnh
   const handleImageUpload = (file: File | null) => {
@@ -165,71 +172,6 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
           "Backend response when adding spouse successfully:",
           response
         );
-
-        // ===== BẮT ĐẦU: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
-
-        // Kiểm tra nếu đã upload ảnh (Giả lập cho mục đích test)
-        if (uploadedFile) {
-          // Tạo một bản sao của response.data để không ảnh hưởng đến dữ liệu gốc
-          const mockData = { ...response.data };
-
-          // Giả sử API trả về familyId, lưu lại để sử dụng sau
-          if (mockData && mockData.familyId) {
-            setFamilyId(mockData.familyId);
-          }
-
-          // Tạo một mảng media giả định với nhiều ảnh
-          mockData.media = [
-            // Giữ lại media gốc nếu có
-            ...(response.data.media || []),
-
-            // Thêm các ảnh giả định
-            {
-              ownerId: "mock-media-1",
-              ownerType: "Member",
-              url: "https://res.cloudinary.com/dhfatqx0l/image/upload/v1742665011/uploads/lxqunmukpm49x0hca2vx.png",
-              fileName: "mock1.png",
-              mimeType: "image/png",
-              size: 330023,
-              createdAt: "2025-03-22T17:36:52.325Z",
-              updatedAt: "2025-03-22T17:36:52.325Z",
-            },
-            {
-              ownerId: "mock-media-2",
-              ownerType: "Member",
-              url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574",
-              fileName: "mock2.jpg",
-              mimeType: "image/jpeg",
-              size: 250000,
-              createdAt: "2025-03-22T17:36:52.325Z",
-              updatedAt: "2025-03-22T17:36:52.325Z",
-            },
-            {
-              ownerId: "mock-media-3",
-              ownerType: "Member",
-              url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961",
-              fileName: "mock3.jpg",
-              mimeType: "image/jpeg",
-              size: 280000,
-              createdAt: "2025-03-22T17:36:52.325Z",
-              updatedAt: "2025-03-22T17:36:52.325Z",
-            },
-          ];
-
-          // Sử dụng dữ liệu giả thay vì dữ liệu thật
-          setApiResponseData(mockData);
-          setShowImageSelection(true);
-          setLoading(false);
-
-          // ===== KẾT THÚC: CODE TẠO DỮ LIỆU GIẢ CHO VIỆC TEST =====
-        } else {
-          // Nếu không có ảnh được tải lên, hoàn thành quy trình bình thường
-          handleCompletionWithoutImageModal();
-        }
-
-        /* Ghi chú: Đã comment đoạn code logic thực tế, bỏ comment sau khi test xong
-        
-        // Kiểm tra nếu có nhiều ảnh trong response
         if (response?.data?.media && response.data.media.length > 1) {
           setApiResponseData(response.data);
           setShowImageSelection(true);
@@ -238,7 +180,6 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
           // Nếu không có nhiều ảnh, đóng modal và thông báo thành công
           handleCompletionWithoutImageModal();
         }
-        */
       },
     },
   });
@@ -255,8 +196,10 @@ const AddSpouseModal: React.FC<AddSpouseModalProps> = ({
   };
 
   // Xử lý khi người dùng hoàn thành việc chọn ảnh
-  const handleImageSelectionComplete = (mediaData: MediaSelectionResult[]) => {
-    console.log("Selected media data:", mediaData);
+  const handleImageSelectionComplete = (result: {
+    verifiedFaces: MediaSelectionResult[];
+  }) => {
+    console.log("Selected media data:", result.verifiedFaces);
     notifySuccess({
       title: "Thành công",
       message: `Đã thêm ${

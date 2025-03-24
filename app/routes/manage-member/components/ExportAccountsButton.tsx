@@ -3,15 +3,8 @@ import { Button, Group, Loader } from "@mantine/core";
 import { IconFileExport } from "@tabler/icons-react";
 import * as XLSX from "xlsx";
 import { notifications } from "@mantine/notifications";
-
-// Sample account data structure
-const sampleAccountData = [
-  { name: "Nguyễn Văn An", username: "annguyen", password: "An@123456" },
-  { name: "Trần Thị Bình", username: "binhtran", password: "Binh@123456" },
-  { name: "Phạm Minh Cường", username: "cuongpham", password: "Cuong@123456" },
-  { name: "Lê Thị Dung", username: "dungle", password: "Dung@123456" },
-  { name: "Võ Đình Hải", username: "haivo", password: "Hai@123456" },
-];
+import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
+import { getDataFromToken } from "~/infrastructure/utils/common";
 
 interface ExportAccountsButtonProps {
   memberData?: any[];
@@ -19,19 +12,77 @@ interface ExportAccountsButtonProps {
 
 const ExportAccountsButton = ({ memberData }: ExportAccountsButtonProps) => {
   const [exporting, setExporting] = useState(false);
+  const token = getDataFromToken();
+  const familyId = token && token?.familyId;
+
+  const {
+    data: accountsData,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetApi({
+    queryKey: ["export-accounts", familyId],
+    endpoint: `members/get-accounts-in-family/${familyId}`,
+    enabled: !!familyId, // Only fetch when familyId is available
+  });
 
   const handleExport = async () => {
     try {
       setExporting(true);
 
-      // In a real app, you would map the actual member data to accounts
-      // For now, we'll use the sample data
-      const dataToExport = sampleAccountData.map((account, index) => ({
-        STT: index + 1,
-        "Họ và tên": account.name,
-        "Tài khoản": account.username,
-        "Mật khẩu": account.password,
-      }));
+      // If data is not yet loaded, trigger a refetch
+      if (!accountsData && !isLoading) {
+        await refetch();
+      }
+
+      if (
+        !accountsData ||
+        !accountsData.data ||
+        accountsData.data.length === 0
+      ) {
+        throw new Error("Không có dữ liệu tài khoản");
+      }
+
+      // Map the actual API data to the Excel format
+      interface AccountData {
+        fullName: string;
+        username: string;
+        password: string;
+        gender: "male" | "female";
+        generation: string;
+        dateOfBirth?: string;
+        dateOfDeath?: string;
+        placeOfBirth?: string;
+        placeOfDeath?: string;
+      }
+
+      interface ExportedAccountData {
+        STT: number;
+        "Họ và tên": string;
+        "Tài khoản": string;
+        "Mật khẩu": string;
+        "Giới tính": string;
+        "Thế hệ": string;
+        "Ngày sinh": string;
+        "Ngày mất": string;
+        "Nơi sinh": string;
+        "Nơi chôn cất": string;
+      }
+
+      const dataToExport: ExportedAccountData[] = accountsData.data.map(
+        (account: AccountData, index: number) => ({
+          STT: index + 1,
+          "Họ và tên": account.fullName,
+          "Tài khoản": account.username,
+          "Mật khẩu": account.password,
+          "Giới tính": account.gender === "male" ? "Nam" : "Nữ",
+          "Thế hệ": account.generation,
+          "Ngày sinh": account.dateOfBirth || "",
+          "Ngày mất": account.dateOfDeath || "",
+          "Nơi sinh": account.placeOfBirth || "",
+          "Nơi chôn cất": account.placeOfDeath || "",
+        })
+      );
 
       // Create workbook and worksheet
       const wb = XLSX.utils.book_new();
@@ -42,7 +93,13 @@ const ExportAccountsButton = ({ memberData }: ExportAccountsButtonProps) => {
         { wch: 5 }, // STT
         { wch: 25 }, // Họ và tên
         { wch: 20 }, // Tài khoản
-        { wch: 20 }, // Mật khẩu
+        { wch: 15 }, // Mật khẩu
+        { wch: 10 }, // Giới tính
+        { wch: 10 }, // Thế hệ
+        { wch: 15 }, // Ngày sinh
+        { wch: 15 }, // Ngày mất
+        { wch: 20 }, // Nơi sinh
+        { wch: 20 }, // Nơi chôn cất
       ];
       ws["!cols"] = wscols;
 
@@ -64,7 +121,10 @@ const ExportAccountsButton = ({ memberData }: ExportAccountsButtonProps) => {
       console.error("Export error:", error);
       notifications.show({
         title: "Xuất thất bại",
-        message: "Có lỗi xảy ra khi xuất dữ liệu. Vui lòng thử lại sau.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Có lỗi xảy ra khi xuất dữ liệu. Vui lòng thử lại sau.",
         color: "red",
       });
     } finally {
@@ -72,10 +132,13 @@ const ExportAccountsButton = ({ memberData }: ExportAccountsButtonProps) => {
     }
   };
 
+  // Determine button state
+  const isButtonDisabled = exporting || isLoading || isError || !familyId;
+
   return (
     <Button
       leftSection={
-        exporting ? (
+        exporting || isLoading ? (
           <Loader size="xs" color="white" />
         ) : (
           <IconFileExport size={18} />
@@ -83,9 +146,13 @@ const ExportAccountsButton = ({ memberData }: ExportAccountsButtonProps) => {
       }
       color="green"
       onClick={handleExport}
-      disabled={exporting}
+      disabled={isButtonDisabled}
     >
-      {exporting ? "Đang xuất..." : "Xuất tài khoản (Excel)"}
+      {exporting
+        ? "Đang xuất..."
+        : isLoading
+        ? "Đang tải dữ liệu..."
+        : "Xuất tài khoản (Excel)"}
     </Button>
   );
 };
