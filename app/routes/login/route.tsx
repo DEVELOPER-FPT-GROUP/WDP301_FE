@@ -14,6 +14,7 @@ import useLogin from "~/infrastructure/api/hooks/auth/useLogin";
 import { AppRoutes } from "~/infrastructure/core/AppRoutes";
 import { Constants } from "~/infrastructure/core/constants";
 import { getDataFromToken } from "~/infrastructure/utils/common";
+import { notifyError } from "~/infrastructure/utils/notification/notification";
 
 export const meta = () => {
   return [{ title: "Đăng nhập" }];
@@ -35,6 +36,13 @@ const Login = () => {
         navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
       }
       // navigate(AppRoutes.PRIVATE.FAMILY_TREE, { replace: true });
+    },
+    onError: (error: any) => {
+      console.log("error", error);
+      notifyError({
+        title: "Lỗi",
+        message: error.response.data.message || "Xóa thất bại!",
+      });
     },
   });
 

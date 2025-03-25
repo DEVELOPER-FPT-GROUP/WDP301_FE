@@ -327,7 +327,7 @@ const HeaderSearch = () => {
                     const member = item.memberDetails;
                     const fullName = `${member.firstName} ${member.middleName} ${member.lastName}`;
                     const avatarUrl = member.media?.[0]?.url || "";
-                    const similarity = (item.similarity * 100).toFixed(0);
+                    const similarity = (item.similarity * 100).toFixed(2);
 
                     return (
                       <Box
@@ -369,7 +369,7 @@ const HeaderSearch = () => {
                           </Flex>
                           <Text>{fullName}</Text>
                           <Text size="xs" c="dimmed">
-                            Trùng khớp: {similarity}
+                            Trùng khớp: {similarity} %
                           </Text>
                         </Flex>
                       </Box>
