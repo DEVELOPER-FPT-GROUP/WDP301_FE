@@ -126,7 +126,10 @@ export function TableComponent<T extends { id: string }>({
                       value = formatSubscription(value as unknown as string);
                     } else if (col.key === "status" && value !== "") {
                       value = formatStatus(value as unknown as string);
-                    } else if (col.key === "createdAt" && value !== "") {
+                    } else if (
+                      col.key === "createdAt" ||
+                      (col.key === "dateOfDeath" && value !== "")
+                    ) {
                       value = formatDate(value as unknown as string);
                     }
 

@@ -43,7 +43,7 @@ const route = () => {
       <TableComponent
         key={refreshKey}
         columns={columns}
-        endpoint={`accounts`}
+        endpoint={`accounts/search`}
         onEdit={handleEdit}
         onDelete={handleDelete}
         showEdit={false}

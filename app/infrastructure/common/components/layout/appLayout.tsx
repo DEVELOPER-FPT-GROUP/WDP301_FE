@@ -67,7 +67,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </Group>
 
           {/* Giữa: Search + Upload + Filter + Kết quả */}
-          <HeaderSearch />
+          {role !== "system_admin" && <HeaderSearch />}
 
           {/* Phải: Logout icon */}
           <Group>
