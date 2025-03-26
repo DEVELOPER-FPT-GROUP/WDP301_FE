@@ -387,13 +387,33 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
   //   }
   //   setCurrentStep("confirm-relatives");
   // };
+  // const handleAvatarSelected = () => {
+  //   if (selectedAvatarIndex === null) return;
+  //   if (familyMembers.length === 0 && isLoading) {
+  //     console.log("Family members not loaded yet, showing loading overlay");
+  //     return <LoadingOverlay visible />;
+  //   }
+
+  //   setCurrentStep("confirm-relatives");
+  // };
   const handleAvatarSelected = () => {
     if (selectedAvatarIndex === null) return;
+
+    // Nếu đang loading family members, hiển thị loading state (thông qua state)
     if (familyMembers.length === 0 && isLoading) {
+      // Không return JSX trực tiếp từ event handler (không hoạt động)
       console.log("Family members not loaded yet, showing loading overlay");
-      return <LoadingOverlay visible />;
+      return;
     }
 
+    // Xử lý đặc biệt cho add-spouse: chuyển thẳng sang label-images
+    if (modalType === "add-spouse") {
+      console.log("Add-spouse flow: Transitioning to label-images step");
+      setCurrentStep("label-images");
+      return;
+    }
+
+    // Các trường hợp khác: chuyển sang confirm-relatives
     setCurrentStep("confirm-relatives");
   };
 
