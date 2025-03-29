@@ -16,6 +16,7 @@ class AxiosService {
 
   constructor() {
     this.instance = axios.create({
+      // baseURL: "https://public-cats-rhyme.loca.lt/",
       baseURL: "http://localhost:8080/",
       timeout: 60 * 1000, //time wait backend response before abort
     });

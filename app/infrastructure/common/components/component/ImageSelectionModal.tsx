@@ -102,11 +102,6 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
   // Auto process if there is 0 or 1 image.
   useEffect(() => {
     if (media.length <= 1) {
-      // console.log(
-      //   `[${new Date().toISOString()}] Auto-processing with ${
-      //     media.length
-      //   } images`
-      // );
       setTimeout(() => {
         if (media.length === 1) {
           // If there is one image, auto select as avatar.
@@ -117,11 +112,10 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
               memberId: newMemberId,
             },
           ];
-          // console.log("Auto-selected single image as avatar:", result);
+
           onComplete({ verifiedFaces: result });
         } else {
           // If there is no image, complete with empty array.
-          // console.log("No images to process, completing");
           onComplete({ verifiedFaces: [] });
         }
       }, 100);
@@ -282,15 +276,6 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
     };
   }, [currentStep]);
 
-  // Log component mount.
-  useEffect(() => {
-    // console.log(
-    //   `ImageSelectionModal: Xử lý ${media.length} ảnh cho ${modalType}`
-    // );
-    // console.log(`Thời gian bắt đầu xử lý: ${new Date().toISOString()}`);
-    // console.log(`Modal type: ${modalType}, familyId: ${familyId}`); // Add this line
-  }, []);
-
   // Fetch family members.
   const { data: memberData, isLoading } = useGetApi({
     queryKey: ["member", modalType, familyId], // Modified query key to depend on modalType
@@ -302,10 +287,7 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
   // Process fetched family members.
   useEffect(() => {
     if (memberData?.data?.items) {
-      // console.log(
-      //   `Fetched family members for ${modalType}:`,
-      //   memberData.data.items
-      // );
+      console.log("Fetched family members:", memberData.data.items);
       const members = memberData.data.items
         .filter((member: any) => member.memberId !== newMemberId)
         .map((member: any) => ({
@@ -367,35 +349,6 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
     }
   };
   const isSubmitting = vertifyFaces.isPending;
-  // Handle when the user selects an avatar.
-  // const handleAvatarSelected = () => {
-  //   if (selectedAvatarIndex === null) return;
-
-  //   // For add-spouse, ensure we have family members before proceeding
-  //   if (modalType === "add-spouse") {
-  //     console.log("Add-spouse flow: Transitioning to label-images step");
-  //     console.log(`Current family members count: ${familyMembers.length}`);
-
-  //     // If we don't have family members yet and API is still loading, show loading
-  //     if (familyMembers.length === 0 && isLoading) {
-  //       console.log("Family members not loaded yet, showing loading overlay");
-  //       return <LoadingOverlay visible />;
-  //     }
-
-  //     setCurrentStep("label-images");
-  //     return;
-  //   }
-  //   setCurrentStep("confirm-relatives");
-  // };
-  // const handleAvatarSelected = () => {
-  //   if (selectedAvatarIndex === null) return;
-  //   if (familyMembers.length === 0 && isLoading) {
-  //     console.log("Family members not loaded yet, showing loading overlay");
-  //     return <LoadingOverlay visible />;
-  //   }
-
-  //   setCurrentStep("confirm-relatives");
-  // };
   const handleAvatarSelected = () => {
     if (selectedAvatarIndex === null) return;
 

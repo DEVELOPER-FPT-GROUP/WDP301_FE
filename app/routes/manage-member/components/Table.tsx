@@ -9,6 +9,7 @@ import {
   ActionIcon,
   Center,
   Box,
+  Avatar,
 } from "@mantine/core";
 import {
   IconEdit,
@@ -41,6 +42,7 @@ export function TableComponent<
     gender?: string;
     generation?: number;
     isDeleted?: boolean;
+    media?: string[];
   }
 >({
   columns,
@@ -154,6 +156,9 @@ export function TableComponent<
               {data && data.length > 0 ? (
                 data.map((row: T) => (
                   <Table.Tr key={row.memberId}>
+                    <Table.Td key={`${row.memberId}-avatar`}>
+                      <Avatar src={row.media && row.media[0]} size="lg" />
+                    </Table.Td>
                     {columns.map((col) => {
                       // Lấy giá trị và xử lý undefined
                       let value =
