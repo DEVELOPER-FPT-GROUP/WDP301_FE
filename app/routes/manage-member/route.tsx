@@ -108,6 +108,7 @@ const Route = () => {
   // Update local state when active data changes
   useEffect(() => {
     if (activeData?.data) {
+      console.log("Active data:", activeData.data); // Debugging line
       setActiveMembers(activeData.data.items || []);
       setTotalActiveItems(activeData.data.totalItems || 0);
       setDataLoaded(true);
