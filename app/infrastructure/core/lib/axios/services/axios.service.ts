@@ -16,7 +16,7 @@ class AxiosService {
 
   constructor() {
     this.instance = axios.create({
-      baseURL: "http://localhost:8080/",
+      baseURL: "https://smart-jokes-burn.loca.lt/",
       timeout: 60 * 1000, //time wait backend response before abort
     });
     // Add a request interceptor below
