@@ -12,7 +12,6 @@ import { useNavigate } from "react-router";
 import { z } from "zod";
 import { usePostApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import { AppRoutes } from "~/infrastructure/core/AppRoutes";
-import { Constants } from "~/infrastructure/core/constants";
 import { Endpoints } from "~/infrastructure/core/endpoints";
 import {
   notifyError,

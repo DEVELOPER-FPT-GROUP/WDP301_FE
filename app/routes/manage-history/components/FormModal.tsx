@@ -133,8 +133,8 @@ const FormModal = ({ opened, onClose, data, refreshTable }: any) => {
         historicalRecordTitle: data.historicalRecordTitle,
         historicalRecordSummary: data.historicalRecordSummary,
         historicalRecordDetails: data.historicalRecordDetails,
-        startDate: data.startDate ? new Date(data.startDate) : "",
-        endDate: data.endDate ? new Date(data.endDate) : "",
+        startDate: data.startDate ? new Date(data.startDate).toISOString() : "",
+        endDate: data.endDate ? new Date(data.endDate).toISOString() : "",
         base64Images: data.base64Images || [],
       });
       setPreviewImages(images);
