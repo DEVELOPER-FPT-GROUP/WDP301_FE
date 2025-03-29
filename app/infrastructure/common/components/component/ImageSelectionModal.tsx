@@ -542,7 +542,7 @@ const ImageSelectionModal: React.FC<ImageSelectionModalProps> = ({
     label: `${member.firstName} ${member.middleName} ${member.lastName}`,
   }));
 
-  console.log("Member options for dropdown:", memberOptions);
+  // console.log("Member options for dropdown:", memberOptions);
 
   if (currentStep === "select-avatar") {
     return (
