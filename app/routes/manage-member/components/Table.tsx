@@ -9,6 +9,7 @@ import {
   ActionIcon,
   Center,
   Box,
+  Avatar,
 } from "@mantine/core";
 import {
   IconEdit,
@@ -36,7 +37,13 @@ interface TableProps<T> {
 }
 
 export function TableComponent<
-  T extends { memberId: string; gender?: string; generation?: number }
+  T extends {
+    memberId: string;
+    gender?: string;
+    generation?: number;
+    isDeleted?: boolean;
+    media?: string[];
+  }
 >({
   columns,
   data,
@@ -149,6 +156,9 @@ export function TableComponent<
               {data && data.length > 0 ? (
                 data.map((row: T) => (
                   <Table.Tr key={row.memberId}>
+                    <Table.Td key={`${row.memberId}-avatar`}>
+                      <Avatar src={row.media && row.media[0]} size="lg" />
+                    </Table.Td>
                     {columns.map((col) => {
                       // Lấy giá trị và xử lý undefined
                       let value =
@@ -183,9 +193,9 @@ export function TableComponent<
                             <IconEdit size={18} />
                           </ActionIcon>
                         )}
-                        {!(row.gender === "male" && row.generation === 0) && (
+                        {row.isDeleted === false && (
                           <ActionIcon
-                            key={`${row.memberId}-edit`}
+                            key={`${row.memberId}-view`}
                             color="yellow"
                             onClick={() => {
                               navigate("/detail-member", {
@@ -199,15 +209,16 @@ export function TableComponent<
                           </ActionIcon>
                         )}
 
-                        {onDelete && (
-                          <ActionIcon
-                            key={`${row.memberId}-delete`}
-                            color="red"
-                            onClick={() => onDelete(row)}
-                          >
-                            <IconTrash size={18} />
-                          </ActionIcon>
-                        )}
+                        {onDelete &&
+                          !(row.gender === "male" && row.generation === 0) && (
+                            <ActionIcon
+                              key={`${row.memberId}-delete`}
+                              color="red"
+                              onClick={() => onDelete(row)}
+                            >
+                              <IconTrash size={18} />
+                            </ActionIcon>
+                          )}
                         {onRestore && (
                           <ActionIcon
                             key={`${row.memberId}-restore`}

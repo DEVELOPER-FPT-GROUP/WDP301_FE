@@ -323,7 +323,7 @@ export default function DetailMember() {
           </Group>
 
           <Group gap="lg" wrap="wrap">
-            {member.parent?.father && (
+            {member.parent?.father && !member.parent.father.isDeleted && (
               <Paper withBorder p="md" radius="md" style={{ flex: "1" }}>
                 <Group gap="md" mb={10}>
                   <Avatar
@@ -355,7 +355,7 @@ export default function DetailMember() {
               </Paper>
             )}
 
-            {member.parent?.mother && (
+            {member.parent?.mother && !member.parent.mother.isDeleted && (
               <Paper withBorder p="md" radius="md" style={{ flex: "1" }}>
                 <Group gap="md" mb={10}>
                   <Avatar
@@ -393,59 +393,67 @@ export default function DetailMember() {
       {/* Thông tin vợ/chồng và con cái */}
       {member.spouses && member.spouses.length > 0 && (
         <Card shadow="sm" padding="xl" radius="md" withBorder>
-          {member.spouses.map((spouseRelation, index) => (
-            <div key={spouseRelation.spouse.memberId}>
-              {/* Hiển thị thông tin vợ/chồng */}
-              <Group mb="md" align="center">
-                <IconHeart size={24} color="#FF6B6B" />
-                <Title order={4}>
-                  {member.gender === "male" ? "Vợ" : "Chồng"} {index + 1}
-                </Title>
-              </Group>
+          {member.spouses.map((spouseRelation, index) => {
+            const validChildren = spouseRelation.children.filter(
+              (childInfo) => !childInfo.child.isDeleted
+            );
 
-              <Paper withBorder p="md" radius="md" mb={20}>
-                <Group align="center" gap="md">
-                  <Avatar
-                    src={getProfileImage(spouseRelation.spouse)}
-                    size="md"
-                    radius="xl"
-                    style={getAvatarStyle(spouseRelation.spouse.isAlive)}
-                  />
-                  <div>
-                    <Text fw={500}>
-                      {getFullName(
-                        spouseRelation.spouse.firstName,
-                        spouseRelation.spouse.middleName,
-                        spouseRelation.spouse.lastName
-                      )}
-                    </Text>
-                    <Group gap="xs">
-                      <Text size="xs" c="dimmed">
-                        Sinh ngày:{" "}
-                        {formatDate(spouseRelation.spouse.dateOfBirth)}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        •{" "}
-                        {spouseRelation.spouse.isAlive ? "Còn sống" : "Đã mất"}
-                      </Text>
-                    </Group>
-                  </div>
-                </Group>
-              </Paper>
-
-              {/* Hiển thị thông tin các con */}
-              {spouseRelation.children &&
-                spouseRelation.children.length > 0 && (
+            return (
+              <div key={spouseRelation.spouse.memberId}>
+                {/* Hiển thị thông tin vợ/chồng */}
+                {!spouseRelation.spouse.isDeleted && (
                   <>
-                    <Group mt={30} mb="md" align="center">
-                      <IconBabyCarriage size={24} />
+                    <Group mb="md" align="center">
+                      <IconHeart size={24} color="#FF6B6B" />
                       <Title order={4}>
-                        Các con ({spouseRelation.children.length})
+                        {member.gender === "male" ? "Vợ" : "Chồng"} {index + 1}
                       </Title>
                     </Group>
 
+                    <Paper withBorder p="md" radius="md" mb={20}>
+                      <Group align="center" gap="md">
+                        <Avatar
+                          src={getProfileImage(spouseRelation.spouse)}
+                          size="md"
+                          radius="xl"
+                          style={getAvatarStyle(spouseRelation.spouse.isAlive)}
+                        />
+                        <div>
+                          <Text fw={500}>
+                            {getFullName(
+                              spouseRelation.spouse.firstName,
+                              spouseRelation.spouse.middleName,
+                              spouseRelation.spouse.lastName
+                            )}
+                          </Text>
+                          <Group gap="xs">
+                            <Text size="xs" c="dimmed">
+                              Sinh ngày:{" "}
+                              {formatDate(spouseRelation.spouse.dateOfBirth)}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              •{" "}
+                              {spouseRelation.spouse.isAlive
+                                ? "Còn sống"
+                                : "Đã mất"}
+                            </Text>
+                          </Group>
+                        </div>
+                      </Group>
+                    </Paper>
+                  </>
+                )}
+
+                {/* Hiển thị thông tin các con */}
+                {validChildren.length > 0 && (
+                  <>
+                    <Group mt={30} mb="md" align="center">
+                      <IconBabyCarriage size={24} />
+                      <Title order={4}>Các con ({validChildren.length})</Title>
+                    </Group>
+
                     <Stack gap="md">
-                      {spouseRelation.children.map((childInfo) => (
+                      {validChildren.map((childInfo) => (
                         <Paper
                           key={childInfo.child.memberId}
                           withBorder
@@ -497,10 +505,11 @@ export default function DetailMember() {
                   </>
                 )}
 
-              {/* Divider between spouses if there are more than one */}
-              {index < member.spouses.length - 1 && <Divider my="xl" />}
-            </div>
-          ))}
+                {/* Divider between spouses if there are more than one */}
+                {index < member.spouses.length - 1 && <Divider my="xl" />}
+              </div>
+            );
+          })}
         </Card>
       )}
     </div>
