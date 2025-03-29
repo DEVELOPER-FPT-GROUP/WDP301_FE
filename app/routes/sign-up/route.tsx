@@ -88,7 +88,7 @@ const SignUp = () => {
       familyName: values.familyName,
     };
 
-    console.log("Submitting payload:", payload);
+    // console.log("Submitting payload:", payload);
     mutate(payload);
   };
 

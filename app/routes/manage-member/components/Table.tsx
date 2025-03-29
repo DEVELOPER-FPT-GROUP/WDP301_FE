@@ -36,7 +36,12 @@ interface TableProps<T> {
 }
 
 export function TableComponent<
-  T extends { memberId: string; gender?: string; generation?: number }
+  T extends {
+    memberId: string;
+    gender?: string;
+    generation?: number;
+    isDeleted?: boolean;
+  }
 >({
   columns,
   data,
@@ -183,9 +188,9 @@ export function TableComponent<
                             <IconEdit size={18} />
                           </ActionIcon>
                         )}
-                        {!(row.gender === "male" && row.generation === 0) && (
+                        {row.isDeleted === false && (
                           <ActionIcon
-                            key={`${row.memberId}-edit`}
+                            key={`${row.memberId}-view`}
                             color="yellow"
                             onClick={() => {
                               navigate("/detail-member", {
@@ -199,15 +204,16 @@ export function TableComponent<
                           </ActionIcon>
                         )}
 
-                        {onDelete && (
-                          <ActionIcon
-                            key={`${row.memberId}-delete`}
-                            color="red"
-                            onClick={() => onDelete(row)}
-                          >
-                            <IconTrash size={18} />
-                          </ActionIcon>
-                        )}
+                        {onDelete &&
+                          !(row.gender === "male" && row.generation === 0) && (
+                            <ActionIcon
+                              key={`${row.memberId}-delete`}
+                              color="red"
+                              onClick={() => onDelete(row)}
+                            >
+                              <IconTrash size={18} />
+                            </ActionIcon>
+                          )}
                         {onRestore && (
                           <ActionIcon
                             key={`${row.memberId}-restore`}
