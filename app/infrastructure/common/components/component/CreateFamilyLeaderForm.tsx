@@ -82,20 +82,15 @@ interface ApiResponse {
   data: {
     memberId: string;
     familyId: string;
-    // Các trường khác...
     media: MediaItem[];
   };
 }
-
-// Current Date and Time (UTC): 2025-03-23 02:53:45
-// User: HE171216
 
 const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
   onSuccess,
   familyId,
 }) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // States for managing images
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -218,7 +213,6 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
     setShowImageSelection(false);
     setApiResponseData(null);
     setSelectedLeaderMemberId(null);
-    setError(null);
   };
 
   // Dọn dẹp object URL khi component unmount
@@ -234,7 +228,6 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
 
   const handleSubmit = async (values: typeof form.values) => {
     setLoading(true);
-    setError(null);
 
     try {
       const formData = new FormData();
@@ -272,10 +265,6 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
       // Use mutation to send the request instead of fetch
       createMutation.mutate(formData, {
         onError: (error: any) => {
-          // Handle error
-          setError(
-            error?.response?.data?.message || "Có lỗi xảy ra khi tạo trưởng họ"
-          );
           notifyError({
             title: "Thất bại",
             message: "Có lỗi xảy ra khi tạo trưởng họ.",
@@ -284,9 +273,6 @@ const CreateFamilyLeaderForm: React.FC<CreateFamilyLeaderFormProps> = ({
         },
       });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Có lỗi xảy ra khi tạo trưởng họ"
-      );
       console.error("Error creating family leader:", err);
       setLoading(false);
     }

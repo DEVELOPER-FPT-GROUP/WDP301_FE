@@ -57,6 +57,9 @@ const TreePage: React.FC = () => {
 
   // Format data từ API và convert media sang image nếu có
   const formattedRoot = useMemo(() => {
+    if (isSuccess) {
+      console.log("Data from API:", data);
+    }
     if (isSuccess && data && data.data) {
       const processNode = (node: any): Node => {
         const processedNode = { ...node };
