@@ -1,8 +1,5 @@
 import { Modal, Button, Group, Text } from "@mantine/core";
-import {
-  useDeleteApi,
-  usePutApi,
-} from "~/infrastructure/common/api/hooks/requestCommonHooks";
+import { usePutApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import {
   notifyError,
   notifySuccess,

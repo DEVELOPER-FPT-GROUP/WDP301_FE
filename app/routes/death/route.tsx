@@ -1,50 +1,31 @@
 import {
   Avatar,
   Badge,
-  Button,
   Card,
-  Container,
-  Divider,
   Group,
-  Modal,
   SimpleGrid,
   Stack,
   Text,
   TextInput,
-  Textarea,
   Title,
   AppShell,
-  Box,
   Center,
   Loader,
 } from "@mantine/core";
-import { useEffect, useState } from "react";
-import { IconCalendarPlus, IconUser } from "@tabler/icons-react";
+import { useState } from "react";
+import { IconUser } from "@tabler/icons-react";
 import { useGetApi } from "~/infrastructure/common/api/hooks/requestCommonHooks";
-import { formatDate } from "~/infrastructure/utils/common";
+import { formatDate, getDataFromToken } from "~/infrastructure/utils/common";
 import { jwtDecode } from "jwt-decode";
 import { Constants } from "~/infrastructure/core/constants";
 
 export const meta = () => [{ title: "Lịch giỗ các cụ" }];
 
-const getFamilyIdFromToken = () => {
-  const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
-
-  if (!token) return null;
-
-  try {
-    const decoded: any = jwtDecode(token);
-    return decoded.familyId; // 🛠️ Trích xuất familyId từ payload
-  } catch (error) {
-    console.error("Lỗi khi giải mã token:", error);
-    return null;
-  }
-};
-
 const MemorialSchedule = () => {
   const [search, setSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState(""); // Lưu giá trị để gọi API
-  const familyId = getFamilyIdFromToken();
+  const dataToken = getDataFromToken();
+  const familyId = dataToken.familyId;
 
   const { data, isLoading, isFetching, refetch } = useGetApi({
     endpoint: `members/family/${familyId}/search`,
@@ -56,7 +37,7 @@ const MemorialSchedule = () => {
       search: searchQuery,
     },
   });
-  console.log("test: ", data);
+  // console.log("test: ", data);
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "Enter") {
       setSearchQuery(search);

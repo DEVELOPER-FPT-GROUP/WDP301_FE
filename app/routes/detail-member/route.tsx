@@ -138,7 +138,7 @@ export default function DetailMember() {
 
   useEffect(() => {
     if (data?.data && !data.data.isDeleted) {
-      console.log(data.data);
+      // console.log(data.data);
       setMember(data.data);
     }
   }, [data]);

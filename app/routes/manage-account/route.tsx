@@ -1,13 +1,6 @@
 import { useState } from "react";
 import { TableComponent } from "~/infrastructure/common/components/component/Table";
-import {
-  ActionIcon,
-  AppShell,
-  Group,
-  Stack,
-  Title,
-  Tooltip,
-} from "@mantine/core";
+import { AppShell, Group, Stack, Title } from "@mantine/core";
 import DeleteModal from "./components/DeleteModal";
 export const meta = () => [{ title: "Quản lý tài khoản" }];
 
