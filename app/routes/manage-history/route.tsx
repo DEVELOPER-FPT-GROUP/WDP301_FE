@@ -11,23 +11,9 @@ import {
 import { IconPlus } from "@tabler/icons-react";
 import FormModal from "./components/FormModal";
 import DeleteModal from "./components/DeleteModal";
-import { Constants } from "~/infrastructure/core/constants";
-import { jwtDecode } from "jwt-decode";
+import { getDataFromToken } from "~/infrastructure/utils/common";
 export const meta = () => [{ title: "Lịch sử dòng họ" }];
 
-const getFamilyIdFromToken = () => {
-  const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
-
-  if (!token) return null;
-
-  try {
-    const decoded: any = jwtDecode(token);
-    return decoded.familyId;
-  } catch (error) {
-    console.error("Lỗi khi giải mã token:", error);
-    return null;
-  }
-};
 const route = () => {
   const [selectedData, setSelectedData] = useState<any>(null);
   const [modalOpened, setModalOpened] = useState(false);
@@ -48,7 +34,8 @@ const route = () => {
     setSelectedData(null);
     setModalOpened(true);
   };
-  const familyId = getFamilyIdFromToken();
+  const token = getDataFromToken();
+  const familyId = token?.familyId;
 
   const refreshTable = () => setRefreshKey((prev) => prev + 1);
 

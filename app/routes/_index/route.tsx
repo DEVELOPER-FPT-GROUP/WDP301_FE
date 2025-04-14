@@ -16,7 +16,7 @@ export default function IndexPage() {
     if (accessToken) {
       return <Navigate to={AppRoutes.PRIVATE.FAMILY_TREE} replace={true} />;
     } else {
-      console.log("not fmt");
+      // console.log("not fmt");
 
       return <Navigate to={AppRoutes.PUBLIC.GUEST.HOME} replace={true} />;
     }

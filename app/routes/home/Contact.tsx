@@ -1,5 +1,4 @@
 import { Box, Text, Title, Button, Grid, Image } from "@mantine/core";
-import { MantineLogo } from "@mantinex/mantine-logo";
 import { motion } from "framer-motion";
 
 const Contact = () => {

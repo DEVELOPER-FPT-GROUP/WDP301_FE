@@ -46,7 +46,16 @@ export default function EventPage() {
   const [opened, setOpened] = useState(false);
   const [showCalendar, setShowCalendar] = useState(true);
   const [selectedEvents, setSelectedEvents] = useState([]);
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  interface Event {
+    eventId: string;
+    eventName: string;
+    startDate: string;
+    // Add other properties as needed
+  }
+
+  const [selectedEvent, setSelectedEvent] = useState<{ event: Event } | null>(
+    null
+  );
   const [modalOpened, setModalOpened] = useState(false);
   const [dateTitle, setDateTitle] = useState("hôm nay");
   const userName = getUserNameFromToken();
@@ -148,10 +157,12 @@ export default function EventPage() {
 
     setDateTitle(selectedDate === todayStr ? "hôm nay" : selectedDate);
 
-    const eventsOnDate = data.data.filter((e) => {
-      const eventDate = formatDateLocal(e.event.startDate);
-      return eventDate === selectedDate;
-    });
+    const eventsOnDate = data.data.filter(
+      (e: { event: { startDate: string } }) => {
+        const eventDate: string = formatDateLocal(e.event.startDate);
+        return eventDate === selectedDate;
+      }
+    );
 
     setSelectedEvents(eventsOnDate);
   };

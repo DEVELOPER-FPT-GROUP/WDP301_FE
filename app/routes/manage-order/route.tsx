@@ -1,18 +1,7 @@
 import { useState } from "react";
 import { TableComponent } from "~/infrastructure/common/components/component/Table";
-import {
-  ActionIcon,
-  AppShell,
-  Group,
-  Stack,
-  Title,
-  Tooltip,
-} from "@mantine/core";
-import { IconPlus } from "@tabler/icons-react";
+import { AppShell, Group, Stack, Title } from "@mantine/core";
 import FormModal from "./components/FormModal";
-import DeleteModal from "./components/DeleteModal";
-import { Constants } from "~/infrastructure/core/constants";
-import { jwtDecode } from "jwt-decode";
 export const meta = () => [{ title: "Lịch sử dòng họ" }];
 
 const route = () => {

@@ -24,24 +24,11 @@ import {
 } from "~/infrastructure/common/api/hooks/requestCommonHooks";
 import { Constants } from "~/infrastructure/core/constants";
 import { notifySuccess } from "~/infrastructure/utils/notification/notification";
+import { getDataFromToken } from "~/infrastructure/utils/common";
 
 dayjs.locale("vi");
 
 export const meta = () => [{ title: "Tài khoản" }];
-
-const getMemberIdFromToken = () => {
-  const token = localStorage.getItem(Constants.API_ACCESS_TOKEN_KEY);
-  if (!token) return null;
-
-  try {
-    const decoded: any = jwtDecode(token);
-    console.log("decoded", decoded.memberId);
-    return decoded.memberId;
-  } catch (error) {
-    console.error("Lỗi khi giải mã token:", error);
-    return null;
-  }
-};
 
 const formatName = (person: any) => {
   if (!person) return "Không rõ";
@@ -60,7 +47,8 @@ const InfoItem = ({ label, value }: { label: string; value: string }) => (
 );
 
 const Profile = () => {
-  const memberId = getMemberIdFromToken();
+  const token = getDataFromToken();
+  const memberId = token?.memberId;
 
   const { data } = useGetApi({
     queryKey: ["member", memberId],
