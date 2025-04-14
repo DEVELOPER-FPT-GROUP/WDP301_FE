@@ -61,11 +61,11 @@ export const adminMenuKeys: MenuItem[] = [
     leftIcon: IconGrave2,
     path: AppRoutes.PRIVATE.MANAGE_FAMILY_DEATH,
   },
-  {
-    label: "Tài khoản",
-    leftIcon: IconUserCircle,
-    path: AppRoutes.PRIVATE.Profile,
-  },
+  // {
+  //   label: "Tài khoản",
+  //   leftIcon: IconUserCircle,
+  //   path: AppRoutes.PRIVATE.Profile,
+  // },
 ];
 
 export const systemAdminMenuKeys: MenuItem[] = [

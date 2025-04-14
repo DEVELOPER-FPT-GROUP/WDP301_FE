@@ -31,6 +31,7 @@ const getFamilyIdFromToken = () => {
 
   try {
     const decoded: any = jwtDecode(token);
+    // console.log(decoded);
     return decoded.familyId;
   } catch (error) {
     console.error("Lỗi khi giải mã token:", error);
@@ -53,22 +54,21 @@ const HeaderSearch = () => {
   // API mutation for facial search
   const facialSearchMutation = usePostApi({
     endpoint: "facial-search/search",
-    queryParams: {
-      similarityThreshold: 0.6,
-      maxResults: 1000,
-      sortBy: "similarity",
-    },
     options: {
       onSuccess: (response) => {
-        console.log("Facial search results:", response);
+        // console.log("Facial search results:", response);
+        // console.log("⚠️ Raw response:", response);
+
+        // if (response?.data) {
+        //   console.log("✅ Nested data:", response.data);
+        // }
 
         // Filter results to only include members from the same family
         if (response && Array.isArray(response)) {
           const filteredResults = response.filter(
-            (result) =>
-              result.memberDetails && result.memberDetails.familyId === familyId
+            (result) => result.memberDetails
           );
-
+          // console.log("Filtered results:", filteredResults);
           setFacialSearchResults(filteredResults);
 
           // Set no results flag if there are no matching results
@@ -120,34 +120,44 @@ const HeaderSearch = () => {
   });
 
   const handleFileUpload = (file: File | null) => {
-    if (!file) return;
+    if (!file || !familyId) return;
 
+    clearImageSearch();
     setUploadedImage(file);
-    setNoResults(false); // Reset no results flag
+    setNoResults(false);
 
-    // Create image preview
     const previewUrl = URL.createObjectURL(file);
     setImagePreview(previewUrl);
-
-    // Set filter to person as we're searching by face
     setActiveFilter("person");
 
-    // Prepare form data for API
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", file); // original file
+    formData.append("familyId", familyId);
+    formData.append("similarityThreshold", "0.75");
+    formData.append("maxResults", "5");
+    formData.append("includeDetails", "true");
+    formData.append("sortBy", "similarity");
 
-    // Call the facial search API using the mutation
     facialSearchMutation.mutate(formData);
   };
 
   const clearImageSearch = () => {
+    // console.log("🧹 Reset tìm kiếm ảnh...");
+
+    // Hủy URL của ảnh cũ trước khi cập nhật state
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+      // console.log("🚮 Đã xóa URL ảnh cũ:", imagePreview);
+    }
+
+    // Reset toàn bộ trạng thái liên quan đến tìm kiếm ảnh
     setUploadedImage(null);
     setImagePreview(null);
     setFacialSearchResults([]);
     setNoResults(false);
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
+
+    // Nếu cần có thể force re-render bằng cách reset mutation
+    facialSearchMutation.reset();
   };
 
   // Lấy danh sách phù hợp với bộ lọc
@@ -175,6 +185,7 @@ const HeaderSearch = () => {
   };
 
   const results = getResults();
+  console.log("Results:", results);
 
   const handleFilterClick = (value: string) => {
     if (imagePreview) {
